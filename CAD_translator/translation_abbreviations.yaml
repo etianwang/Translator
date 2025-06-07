@@ -1,0 +1,96 @@
+abbrev_map:
+  APD: 深化设计图
+  APS: 初步设计图
+  ARCHI: 建筑图
+  ASC: 电梯
+  B1: 负一楼
+  B2: 负二楼
+  B3: 负三楼
+  BAES: 应急灯
+  BEP: 电气接线柱
+  BMS: 楼宇控制系统
+  BUREAU: 办公室
+  CDP: 剖面图
+  CH: 卧室
+  CLO: 隔墙图
+  CTA: 空气处理机组
+  CUI: 厨房
+  CUIS: 厨房
+  CVC: 暖通
+  D: 深度
+  DCE: 招标图
+  DEGT: 过道
+  DET: 施工指导图
+  DGA: 大型排烟系统
+  DOE: 竣工图
+  DP: 断路器
+  ELEC: 电气
+  ENT: 入口
+  EP: 雨水
+  ESC: 楼梯
+  ETG: 楼层
+  EU: 污水
+  EV: 排水
+  EXE: 施工图
+  EXT: 室外工程图
+  F1: 一楼
+  F2: 二楼
+  F3: 三楼
+  F4: 四楼
+  FAC: 立面图
+  GTB: 楼宇自动化
+  GTL: 技术井
+  H: 高度
+  HVAC: 暖通
+  INT: 室内工程图
+  L: 长度
+  LOC TEC: 设备间
+  MEE: 实施图
+  NIV: 楼层
+  PAC: 热泵
+  PC: 建筑许可证图
+  PL: 图纸
+  PLB: 管道
+  PMR: 无障碍
+  R+1: 一层
+  R+2: 二层
+  R+3: 三层
+  R+4: 四层
+  R+5: 五层
+  R+6: 六层
+  RDC: 底层
+  RES: 储藏室
+  RIE: 电气内部规范
+  SAL: 客厅
+  SAN: 给排水
+  SDB: 卫生间
+  SECUR: 安防图
+  SS1: 地下室一层
+  SS2: 地下室二层
+  SS3: 地下室三层
+  SS4: 地下室四层
+  SSI: 消防
+  SSL: 地下室
+  STRUC: 结构图
+  TA: 配电箱
+  TGBT: 低压配电柜
+  TOILETTES PMR: 无障碍厕所
+  Toil: 厕所
+  VMC: 机械通风
+  VRD: 市政配套图
+  W: 宽度
+  WC: 厕所
+  WC F: 女卫生间
+  WC FEMMES: 女卫生间
+  WC H: 男卫生间
+  WC H/F: 男女共用卫生间
+  WC HOMMES: 男卫生间
+  WC PMR: 无障碍卫生间
+  asc: 电梯
+  cta: 空气处理机组
+  d.p.: 断路器
+  plan: 平面图
+  schéma: 系统图
+  shema: 示意图
+  w.c.: 厕所
+  wc: 厕所

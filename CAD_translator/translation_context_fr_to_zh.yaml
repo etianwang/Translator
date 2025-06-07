@@ -1,0 +1,440 @@
+context_fr_to_zh:
+  JOUR: 挑空
+  LOCAL BATTERIE: 蓄电池房
+  LOCAL GROUPE ÉLECTROGÈNE: 发电机房
+  LOCAL INFORMATIQUE: 编译器房
+  LOCAL ONDULEUR: UPS 机房
+  LOCAL SERVEUR: 服务器机房
+  LOCAUX PMR: 无障碍区域
+  RÉSERVE TECHNIQUE: 技术备用间
+  SALLE SERVEUR: 服务器机房
+  VIDE: 镂空
+  VIDE SUR SÉJOUR: 客厅中庭挑空
+  alarme: 报警
+  ascenseur: 电梯
+  bouche de reprise: 回风口
+  bouche de soufflage: 出风口
+  chemin de câbles: 桥架
+  climatisation: 空调
+  conduite d'air: 风管
+  conduite d'eau: 水管
+  conduite de condensat: 冷凝水管
+  contrôle: 控制
+  couloir: 走廊
+  courant faible: 弱电
+  courant fort: 强电
+  cuisine: 厨房
+  eau chaude et froide: 冷热水
+  entrée: 入口
+  escalier: 楼梯
+  extraction d'air: 排风
+  faux plafond: 吊顶
+  gaine technique: 管道井
+  grille d'air: 风口
+  interrupteur: 开关
+  local des machines: 机房
+  local technique: 设备间
+  mur: 墙面
+  plafond: 天花
+  plan: 平面图
+  plan de plafond: 天花图
+  portes et fenêtres: 门窗
+  prise: 插座
+  salle de bain: 卫生间
+  schéma de commande: 控制系统图
+  schéma de câblage: 接线图
+  schéma de distribution: 配电系统图
+  schéma de principe: 系统图
+  schéma de ventilation: 通风系统图
+  schéma fonctionnel: 功能图
+  schéma hydraulique: 水力系统图
+  schéma incendie: 消防系统图
+  schéma réseau: 网络结构图
+  schéma électrique: 电气系统图
+  shema: 示意图
+  sol: 地面
+  sortie: 出口
+  sécurité incendie: 消防
+  tableau de distribution: 配电箱
+  tour de refroidissement: 冷却塔
+  unité de climatisation: 空调机
+  unité de ventilation: 新风机
+  ventilateur: 风机
+  ventilation: 新风
+  ventilo-convecteur: 风机盘管
+  vidéosurveillance: 监控
+  éclairage: 照明
+  écran: 屏幕
+  écran de contrôle: 控制屏
+  évacuation d'eau: 排水管
+  évacuation fumée: 排烟
+  YAOUNDE: 雅温得
+  Yaoundé: 雅温得
+  Douala: 杜阿拉
+  DOUALA: 杜阿拉
+  Bafoussam: 巴富萨姆
+  BAFOUSSAM: 巴富萨姆
+  Garoua: 加鲁阿
+  GAROUA: 加鲁阿
+  Maroua: 马鲁阿
+  MAROUA: 马鲁阿
+  Ngaoundéré: 恩冈代雷
+  NGAOUNDÉRÉ: 恩冈代雷
+  Bertoua: 贝托阿
+  BERTOUA: 贝托阿
+  Ebolowa: 埃博洛瓦
+  EBOLOWA: 埃博洛瓦
+  Abidjan: 阿比让
+  ABIDJAN: 阿比让
+  Yamoussoukro: 亚穆苏克罗
+  YAMOUSSOUKRO: 亚穆苏克罗
+  Bouaké: 布瓦凯
+  BOUAKÉ: 布瓦凯
+  Daloa: 达洛阿
+  DALOA: 达洛阿
+  Korhogo: 科霍戈
+  KORHOGO: 科霍戈
+  San Pedro: 圣佩德罗
+  SAN PEDRO: 圣佩德罗
+  Man: 曼城
+  MAN: 曼城
+  Gagnoa: 加尼奥阿
+  GAGNOA: 加尼奥阿
+  Divo: 迪沃
+  DIVO: 迪沃
+    # 阿尔及利亚
+  Algeria: 阿尔及利亚
+  Algiers: 阿尔及尔
+  ALGIERS: 阿尔及尔
+  Oran: 奥兰
+  ORAN: 奥兰
+  Constantine: 君士坦丁
+  CONSTANTINE: 君士坦丁
+  Annaba: 安纳巴
+  ANNABA: 安纳巴
+
+    # 安哥拉
+  Angola: 安哥拉
+  Luanda: 罗安达
+  LUANDA: 罗安达
+  Huambo: 万博
+  HUAMBO: 万博
+  Lobito: 洛比托
+  LOBITO: 洛比托
+  Benguela: 本格拉
+  BENGUELA: 本格拉
+
+    # 贝宁
+  Benin: 贝宁
+  Porto-Novo: 波多诺伏
+  PORTO-NOVO: 波多诺伏
+  Cotonou: 科托努
+  COTONOU: 科托努
+  Parakou: 帕拉库
+  PARAKOU: 帕拉库
+  Djougou: 朱古
+  DJOUGOU: 朱古
+
+    # 博茨瓦纳
+  Botswana: 博茨瓦纳
+  Gaborone: 哈博罗内
+  GABORONE: 哈博罗内
+  Francistown: 弗朗西斯敦
+  FRANCISTOWN: 弗朗西斯敦
+  Molepolole: 莫莱波洛莱
+  MOLEPOLOLE: 莫莱波洛莱
+  Maun: 马翁
+  MAUN: 马翁
+
+    # 布基纳法索
+  Burkina Faso: 布基纳法索
+  Ouagadougou: 瓦加杜古
+  OUAGADOUGOU: 瓦加杜古
+  Bobo-Dioulasso: 博博-迪乌拉索
+  BOBO-DIOULASSO: 博博-迪乌拉索
+  Koudougou: 库杜古
+  KOUDOUGOU: 库杜古
+  Banfora: 班福拉
+  BANFORA: 班福拉
+
+    # 布隆迪
+  Burundi: 布隆迪
+  Gitega: 基特加
+  GITEGA: 基特加
+  Bujumbura: 布琼布拉
+  BUJUMBURA: 布琼布拉
+  Ngozi: 昂戈齐
+  NGOZI: 昂戈齐
+  Muyinga: 穆因加
+  MUYINGA: 穆因加
+
+    # 喀麦隆
+  Cameroon: 喀麦隆
+  Yaoundé: 雅温得
+  YAOUNDÉ: 雅温得
+  Douala: 杜阿拉
+  DOUALA: 杜阿拉
+  Garoua: 加鲁阿
+  GAROUA: 加鲁阿
+  Bamenda: 巴门达
+  BAMENDA: 巴门达
+
+    # 佛得角
+  Cape Verde: 佛得角
+  Praia: 普拉亚
+  PRAIA: 普拉亚
+  Mindelo: 明德卢
+  MINDELO: 明德卢
+  Santa Maria: 圣玛丽亚
+  SANTA MARIA: 圣玛丽亚
+  Assomada: 阿索马达
+  ASSOMADA: 阿索马达
+
+    # 中非共和国
+  Central African Republic: 中非共和国
+  Bangui: 班吉
+  BANGUI: 班吉
+  Bimbo: 宾博
+  BIMBO: 宾博
+  Berbérati: 贝尔贝拉蒂
+  BERBÉRATI: 贝尔贝拉蒂
+  Carnot: 卡尔诺
+  CARNOT: 卡尔诺
+
+    # 乍得
+  Chad: 乍得
+  N'Djamena: 恩贾梅纳
+  N'DJAMENA: 恩贾梅纳
+  Moundou: 穆恩杜
+  MOUNDOU: 穆恩杜
+  Sarh: 萨尔
+  SARH: 萨尔
+  Abéché: 阿贝歇
+  ABÉCHÉ: 阿贝歇
+
+    # 科摩罗
+  Comoros: 科摩罗
+  Moroni: 莫罗尼
+  MORONI: 莫罗尼
+  Mutsamudu: 穆察穆杜
+  MUTSAMUDU: 穆察穆杜
+  Fomboni: 丰博尼
+  FOMBONI: 丰博尼
+  Domoni: 多莫尼
+  DOMONI: 多莫尼
+
+    # 刚果（布）
+  Republic of the Congo: 刚果（布）
+  Brazzaville: 布拉柴维尔
+  BRAZZAVILLE: 布拉柴维尔
+  Pointe-Noire: 黑角
+  POINTE-NOIRE: 黑角
+  Dolisie: 多利济
+  DOLISIE: 多利济
+  Nkayi: 恩卡伊
+  NKAYI: 恩卡伊
+
+    # 刚果（金）
+  Democratic Republic of the Congo: 刚果（金）
+  Kinshasa: 金沙萨
+  KINSHASA: 金沙萨
+  Lubumbashi: 卢本巴希
+  LUBUMBASHI: 卢本巴希
+  Mbuji-Mayi: 姆布吉马伊
+  MBUJI-MAYI: 姆布吉马伊
+  Kisangani: 基桑加尼
+  KISANGANI: 基桑加尼
+
+    # 科特迪瓦
+  Côte d'Ivoire: 科特迪瓦
+  Yamoussoukro: 亚穆苏克罗
+  YAMOUSSOUKRO: 亚穆苏克罗
+  Abidjan: 阿比让
+  ABIDJAN: 阿比让
+  Bouaké: 布瓦凯
+  BOUAKÉ: 布瓦凯
+  Daloa: 达洛亚
+  DALOA: 达洛亚
+
+    # 吉布提
+  Djibouti: 吉布提
+  Djibouti City: 吉布提市
+  DJIBOUTI CITY: 吉布提市
+  Ali Sabieh: 阿里萨比赫
+  ALI SABIEH: 阿里萨比赫
+  Tadjourah: 塔朱拉
+  TADJOURAH: 塔朱拉
+  Dikhil: 迪基尔
+  DIKHIL: 迪基尔
+
+    # 埃及
+  Egypt: 埃及
+  Cairo: 开罗
+  CAIRO: 开罗
+  Alexandria: 亚历山大
+  ALEXANDRIA: 亚历山大
+  Giza: 吉萨
+  GIZA: 吉萨
+  Shubra El Kheima: 舒布拉·哈伊马
+  SHUBRA EL KHEIMA: 舒布拉·哈伊马
+
+    # 赤道几内亚
+  Equatorial Guinea: 赤道几内亚
+  Malabo: 马拉博
+  MALABO: 马拉博
+  Bata: 巴塔
+  BATA: 巴塔
+  Ebebiyin: 埃贝比因
+  EBEBIYIN: 埃贝比因
+  Evinayong: 埃维纳永
+  EVINAYONG: 埃维纳永
+
+    # 厄立特里亚
+  Eritrea: 厄立特里亚
+  Asmara: 阿斯马拉
+  ASMARA: 阿斯马拉
+  Keren: 克伦
+  KEREN: 克伦
+  Massawa: 马萨瓦
+  MASSAWA: 马萨瓦
+  Assab: 阿萨布
+  ASSAB: 阿萨布
+
+    # 埃塞俄比亚
+  Ethiopia: 埃塞俄比亚
+  Addis Ababa: 亚的斯亚贝巴
+  ADDIS ABABA: 亚的斯亚贝巴
+  Dire Dawa: 德雷达瓦
+  DIRE DAWA: 德雷达瓦
+  Mekelle: 梅克莱
+  MEKELLE: 梅克莱
+  Gondar: 冈达尔
+  GONDAR: 冈达尔
+
+    # 加蓬
+  Gabon: 加蓬
+  Libreville: 利伯维尔
+  LIBREVILLE: 利伯维尔
+  Port-Gentil: 让蒂尔港
+  PORT-GENTIL: 让蒂尔港
+  Franceville: 弗朗斯维尔
+  FRANCEVILLE: 弗朗斯维尔
+  Oyem: 奥耶姆
+  OYEM: 奥耶姆
+
+    # 冈比亚
+  Gambia: 冈比亚
+  Banjul: 班珠尔
+  BANJUL: 班珠尔
+  Serekunda: 塞雷昆达
+  SEREKUNDA: 塞雷昆达
+  Brikama: 布里卡马
+  BRIKAMA: 布里卡马
+  Bakau: 巴考
+  BAKAU: 巴考
+
+  # 加纳
+  Ghana: 加纳
+  Accra: 阿克拉
+
+
+  # 马里
+  Mali: 马里
+  Bamako: 巴马科
+  BAMAKO: 巴马科
+  Sikasso: 锡卡索
+  SIKASSO: 锡卡索
+  Mopti: 莫普提
+  MOPTI: 莫普提
+  Kayes: 卡伊
+  KAYES: 卡伊
+
+  # 尼日尔
+  Niger: 尼日尔
+  Niamey: 尼亚美
+  NIAMEY: 尼亚美
+  Zinder: 津德尔
+  ZINDER: 津德尔
+  Maradi: 马拉迪
+  MARADI: 马拉迪
+  Agadez: 阿加德兹
+  AGADEZ: 阿加德兹
+
+  # 几内亚
+  Guinea: 几内亚
+  Conakry: 科纳克里
+  CONAKRY: 科纳克里
+  Kankan: 康康
+  KANKAN: 康康
+  Labé: 拉贝
+  LABÉ: 拉贝
+  Nzérékoré: 恩泽雷科雷
+  NZÉRÉKORÉ: 恩泽雷科雷
+
+  # 马达加斯加
+  Madagascar: 马达加斯加
+  Antananarivo: 塔那那利佛
+  ANTANANARIVO: 塔那那利佛
+  Toamasina: 图阿马西纳
+  TOAMASINA: 图阿马西纳
+  Antsirabe: 安齐拉贝
+  ANTSIRABE: 安齐拉贝
+  Mahajanga: 马哈赞加
+  MAHAJANGA: 马哈赞加
+
+  # 毛里塔尼亚
+  Mauritania: 毛里塔尼亚
+  Nouakchott: 努瓦克肖特
+  NOUAKCHOTT: 努瓦克肖特
+  Nouadhibou: 努瓦迪布
+  NOUADHIBOU: 努瓦迪布
+  Rosso: 罗索
+  ROSSO: 罗索
+  Kaédi: 凯迪
+  KAÉDI: 凯迪
+
+  # 卢旺达
+  Rwanda: 卢旺达
+  Kigali: 基加利
+  KIGALI: 基加利
+  Butare: 布塔雷
+  BUTARE: 布塔雷
+  Gisenyi: 基塞尼
+  GISENYI: 基塞尼
+  Ruhengeri: 鲁亨盖里
+  RUHENGERI: 鲁亨盖里
+
+  # 塞舌尔
+  Seychelles: 塞舌尔
+  Victoria: 维多利亚
+  VICTORIA: 维多利亚
+  Anse Boileau: 安斯博伊洛
+  ANSE BOILEAU: 安斯博伊洛
+  Bel Ombre: 贝尔翁布尔
+  BEL OMBRE: 贝尔翁布尔
+  Beau Vallon: 博瓦隆
+  BEAU VALLON: 博瓦隆
+
+  # 多哥
+  Togo: 多哥
+  Lomé: 洛美
+  LOMÉ: 洛美
+  Sokodé: 索科德
+  SOKODÉ: 索科德
+  Kara: 卡拉
+  KARA: 卡拉
+  Kpalimé: 卡帕利梅
+  KPALIMÉ: 卡帕利梅
+
+  # 塞内加尔
+  Senegal: 塞内加尔
+  Dakar: 达喀尔
+  DAKAR: 达喀尔
+  Thiès: 蒂耶斯
+  THIÈS: 蒂耶斯
+  Saint-Louis: 圣路易
+  SAINT-LOUIS: 圣路易
+  Kaolack: 考拉克
+  KAOLACK: 考拉克
+  COMMUNE DE YAOUNDE: 雅温得市
+  COMMUNE DE YAOUNDÉ: 雅温得市
