@@ -8,7 +8,7 @@ a = Analysis(
     ['Toolbox_GUI.py'],
     pathex=[],
     binaries=[],
-    datas=[('assets', 'assets'), ('CAD_translator', 'CAD_translator'), ('PDF_translator', 'PDF_translator')],
+    datas=[('assets', 'assets'), ('CAD_translator', 'CAD_translator'), ('PDF_translator', 'PDF_translator'), ('PPT_translator', 'PPT_translator'), ('C:\\Users\\etn\\AppData\\Local\\Programs\\Python\\Python37\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\platforms', 'plugins\\platforms'), ('C:\\Users\\etn\\AppData\\Local\\Programs\\Python\\Python37\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\imageformats', 'plugins\\imageformats'), ('C:\\Users\\etn\\AppData\\Local\\Programs\\Python\\Python37\\Lib\\site-packages\\PyQt5\\Qt5\\plugins\\styles', 'plugins\\styles')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

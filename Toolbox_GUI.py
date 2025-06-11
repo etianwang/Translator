@@ -11,6 +11,7 @@ from PyQt5.QtCore import Qt, QRectF, QPoint
 import subprocess
 from PDF_translator.PDF_translator_fn import run_pdf_gui
 from CAD_translator.CAD_translator_fn import run_cad_gui
+from PPT_translator.PPT_translator_fn import run_ppt_gui
 
 def resource_path(relative_path):
     """兼容 PyInstaller 的资源路径"""
@@ -127,6 +128,13 @@ class ToolboxWindow(QWidget):
         self.pdf_button.clicked.connect(run_pdf_gui)
         content_layout.addWidget(self.pdf_button)
 
+        content_layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Fixed))
+
+        self.ppt_button = QPushButton("📊 PPT 翻译器")
+        self.ppt_button.setStyleSheet(button_style)
+        self.ppt_button.clicked.connect(run_ppt_gui)
+        content_layout.addWidget(self.ppt_button)
+
         # 中间提示
         bottom_label = QLabel("🛠 Excel翻译工具开发中...")
         bottom_label.setStyleSheet("color: white; font-size: 30px;")
@@ -161,7 +169,7 @@ class ToolboxWindow(QWidget):
 
         # Footer 文本
         footer_label = QLabel("© 2025 Honsen Etienne | 翻译工具箱 v1.0 | Powered by PyQt5")
-        footer_label.setStyleSheet("color: rgba(255, 255, 255, 0.5); font-size: 25px;")
+        footer_label.setStyleSheet("color: rgba(255, 255, 255, 0.5); font-size: 20px;")
         footer_label.setAlignment(Qt.AlignCenter)
         footer_layout.addWidget(footer_label)
 
