@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "e:\git\Translator\PPT_translator\PPT_translator_fn.py", line 264, in run_ppt_gui
+    window = PPTTranslatorUI()
+  File "e:\git\Translator\PPT_translator\PPT_translator_fn.py", line 38, in __init__
+    self.init_ui()
+  File "e:\git\Translator\PPT_translator\PPT_translator_fn.py", line 45, in init_ui
+    font_family = QtGui.QFontDatabase.applicationFontFamilies(font_id)[0]
+IndexError: list index out of range
