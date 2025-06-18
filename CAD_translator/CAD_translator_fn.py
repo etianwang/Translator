@@ -68,6 +68,13 @@ def pick_available_font():
 
 CONFIG_PATH = os.path.expanduser("~/.cad_translator_config.json")
 
+def validate_yaml_dict(name, value):
+    if not isinstance(value, dict):
+        messagebox.showerror("术语表格式错误", f"{name} 加载失败或格式不正确，应为 key: value 的映射。")
+        sys.exit(1)
+    if not value:
+        messagebox.showerror("术语表为空", f"{name} 是空的，请检查文件内容。")
+        sys.exit(1)
 def remove_emoji(text):
     import re
     emoji_pattern = re.compile(
@@ -113,7 +120,7 @@ class CADChineseTranslator:
         self.deepl_api_key = os.environ.get("DEEPL_API_KEY")  # 或你手动赋值
         self.deepl_translator = None
         self.cleaner = TextCleaner()
-        abbrev_data = load_yaml_data("translation_abbreviations.yaml")
+        abbrev_data = load_yaml_data("CAD_translator/translation_abbreviations.yaml")
         self.abbrev_map_fr_to_zh = abbrev_data.get("abbrev_map", {})
 
         # if self.deepl_api_key:
@@ -123,10 +130,10 @@ class CADChineseTranslator:
         #     except Exception as e:
         #         self.safe_log(f" 初始化 DeepL 失败: {e}")
         # 语言配置 - 只保留中法互译
-# 加载上下文与修正表
-        context_zh_to_fr = load_yaml_data("translation_context.yaml").get("context_zh_to_fr", {})
-        context_fr_to_zh = load_yaml_data("translation_context_fr_to_zh.yaml").get("context_fr_to_zh", {})
-        corrections_fr_to_zh = load_yaml_data("translation_corrections.yaml").get("corrections_fr_to_zh", {})
+        # 加载上下文与修正表
+        context_zh_to_fr = load_yaml_data("CAD_translator/translation_context.yaml").get("context_zh_to_fr", {})
+        context_fr_to_zh = load_yaml_data("CAD_translator/translation_context_fr_to_zh.yaml").get("context_fr_to_zh", {})
+        corrections_fr_to_zh = load_yaml_data("CAD_translator/translation_corrections.yaml").get("corrections_fr_to_zh", {})
 
         self.context_zh_to_fr = context_zh_to_fr
         self.context_fr_to_zh = context_fr_to_zh
@@ -146,7 +153,21 @@ class CADChineseTranslator:
                 'context': self.context_fr_to_zh
             }
         }
-        self.chatgpt_api_key = None  # placeholder
+        
+        # ✅ 正确放在这里：术语加载检查
+        # 术语表校验
+        validate_yaml_dict("translation_context.yaml", self.context_zh_to_fr)
+        self.safe_log("✅ 已加载并校验 translation_context.yaml")
+
+        validate_yaml_dict("translation_context_fr_to_zh.yaml", self.context_fr_to_zh)
+        self.safe_log("✅ 已加载并校验 translation_context_fr_to_zh.yaml")
+
+        validate_yaml_dict("translation_corrections.yaml", self.corrections_fr_to_zh)
+        self.safe_log("✅ 已加载并校验 translation_corrections.yaml")
+
+        validate_yaml_dict("translation_abbreviations.yaml", self.abbrev_map_fr_to_zh)
+        self.safe_log("✅ 已加载并校验 translation_abbreviations.yaml")
+
         # 如果传入了 deepl_key 后初始化 translator：
         if self.deepl_api_key:
             try:
@@ -177,6 +198,21 @@ class CADChineseTranslator:
         except Exception as e:
             print("[日志记录失败]", e)
             print("原始日志内容:", repr(message))
+    def apply_context_terms(self, text, lang_config_key):
+        if not text or not isinstance(text, str):
+            return text
+
+        if lang_config_key not in self.language_configs:
+            return text
+
+        context_dict = self.language_configs[lang_config_key]['context']
+
+        for term, replacement in context_dict.items():
+            if term in text:
+                text = text.replace(term, replacement)
+                self.safe_log(f"术语替换: {term} → {replacement}")
+        
+        return text
 
     def preprocess_abbreviations(self, text, lang_config_key):
         """在翻译前处理常见缩写，例如 W:800mm → 宽度:800mm，W400*H650 → 宽度400×高度650"""
@@ -254,63 +290,67 @@ class CADChineseTranslator:
 
         return re.sub(r'\s+', ' ', text).strip()
    
-    def translate_text(self, text, lang_config_key):
-        if not text or not lang_config_key:
-            return text
+    def translate_text(self, original_text, lang_config_key):
+        if not original_text or not lang_config_key:
+            return original_text
 
-        # Step 1: 预清洗
-        cleaned = self.cleaner.full_clean(text)
+        # Step 0: 替换术语（例如 四层 → R+3）
+        text_with_terms = self.apply_context_terms(original_text, lang_config_key)
 
-        if text in self.translated_cache:
-            return self.translated_cache[text]
+        # Step 1: 清洗术语替换后的文本
+        cleaned = self.cleaner.full_clean(text_with_terms)
+        # Step 2: 使用术语替换后的文本做缓存判断
+        if text_with_terms in self.translated_cache:
+            return self.translated_cache[text_with_terms]
 
+        # Step 3: 空/非法文本直接跳过
         if not cleaned.strip():
-            self.safe_log(f"跳过空文本或无效文本: \"{text}\"")
-            return self.cleaner.safe_utf8(text)
+            self.safe_log(f"跳过空文本或无效文本: \"{original_text}\"")
+            return self.cleaner.safe_utf8(original_text)
 
         try:
             cleaned.encode('utf-8')
         except UnicodeEncodeError as e:
-            self.safe_log(f"跳过包含编码问题的文本: \"{text}\" - 错误: {e}")
-            return self.cleaner.safe_utf8(text)
+            self.safe_log(f"跳过包含编码问题的文本: \"{original_text}\" - 错误: {e}")
+            return self.cleaner.safe_utf8(original_text)
 
-        # Step 2: 判定是否跳过翻译
+        # Step 4: 判定是否跳过翻译（纯符号或编号）
         non_translatable = re.fullmatch(r'[\d\s.,:;*×x\-_/\\%°(){}\[\]]+', cleaned.strip())
         ascii_only = all(ord(c) < 128 for c in cleaned.strip())
         non_word_ratio = sum(1 for c in cleaned if not c.isalnum()) / (len(cleaned) or 1)
 
         if non_translatable or (ascii_only and non_word_ratio > 0.6):
             self.safe_log(f"跳过非翻译文本（符号/ASCII）: \"{cleaned}\"")
-            self.translated_cache[text] = cleaned
+            self.translated_cache[text_with_terms] = cleaned
             return self.cleaner.safe_utf8(cleaned)
 
-        # Step 3: 缩写处理 & 中文校验
+        # Step 5: 缩写处理（如 W:800mm）
         cleaned = self.preprocess_abbreviations(cleaned, lang_config_key)
         cleaned = self.cleaner.safe_utf8(cleaned)
 
         if lang_config_key == "zh_to_fr" and not re.search(r'[\u4e00-\u9fff]', cleaned):
             self.safe_log(f"跳过非中文内容（疑似编号）: \"{cleaned}\"")
-            return self.cleaner.safe_utf8(text)
+            return self.cleaner.safe_utf8(original_text)
 
-        # Step 4: 可读性检查
+        # Step 6: 可读性检查（防乱码）
         printable_chars = sum(1 for char in cleaned if char.isprintable() or '\u4e00' <= char <= '\u9fff')
         if len(cleaned) > 0 and printable_chars / len(cleaned) < 0.5:
             self.safe_log(f"跳过损坏文本(可读字符比例过低): \"{cleaned}\"")
-            return self.cleaner.safe_utf8(text)
+            return self.cleaner.safe_utf8(original_text)
 
+        # Step 7: 翻译请求
         if lang_config_key not in self.language_configs:
             self.safe_log(f"无效的翻译配置: {lang_config_key}")
-            return self.cleaner.safe_utf8(text)
+            return self.cleaner.safe_utf8(original_text)
 
         lang_config = self.language_configs[lang_config_key]
+        context_hint = self.get_contextual_translation(cleaned, lang_config_key)
+
+        self.safe_log(f"翻译中 ({lang_config['name']}): {cleaned}")
+        if context_hint != cleaned:
+            self.safe_log(f"提示术语: {context_hint}")
 
         try:
-            context = self.get_contextual_translation(cleaned, lang_config_key)
-            self.safe_log(f"翻译中 ({lang_config['name']}): {cleaned}")
-            if context != cleaned:
-                self.safe_log(f"提示术语: {context}")
-
-            # Step 5: 发送翻译请求
             translated_result = ""
             if self.use_engine == 'google':
                 result = self.translator.translate(cleaned, src=lang_config['source'], dest=lang_config['target'])
@@ -322,51 +362,31 @@ class CADChineseTranslator:
                     target_lang=lang_config['target'].split('-')[0].upper()
                 )
                 translated_result = deepl_result.text
-            elif self.use_engine == 'chatgpt':
-                if not self.chatgpt_api_key:
-                    raise Exception("ChatGPT API Key 未配置")
-
-                import openai
-                openai.api_key = self.chatgpt_api_key
-
-                try:
-                    prompt = f"请将以下内容从{lang_config['name']}翻译成对应语言，不要解释：\n\"{cleaned}\""
-                    response = openai.ChatCompletion.create(
-                        model="gpt-3.5-turbo",
-                        messages=[
-                            {"role": "user", "content": prompt}
-                        ],
-                        temperature=0.2
-                    )
-                    translated_result = response.choices[0].message['content'].strip()
-                except Exception as e:
-                    raise Exception(f"ChatGPT 翻译失败: {e}")
             else:
                 raise Exception("未配置可用的翻译引擎")
 
-            # Step 6: 翻译结果后处理
+            # Step 8: 后处理
             if self.contains_surrogates(translated_result):
                 self.safe_log(f"⚠ 翻译结果含代理字符，准备清理: {repr(translated_result)}")
                 translated_result = self.cleaner.full_clean(translated_result)
 
             final = self.post_process_translation(translated_result, cleaned, lang_config_key)
-            final = self.cleaner.safe_utf8(final)
-            final = self.cleaner.full_clean(final)
-            final = self.cleaner.safe_utf8(final).strip()  # ✨ 此处加入 strip
+            final = self.cleaner.safe_utf8(self.cleaner.full_clean(final)).strip()
 
             if self.contains_surrogates(final):
                 self.safe_log(f"⚠ 最终翻译仍包含代理字符，将用占位符替换: {repr(final)}")
-                final = final.replace('\ufffd', '?')  # 防止乱码
+                final = final.replace('\ufffd', '?')
                 final = self.cleaner.safe_utf8(final)
 
-            self.translated_cache[text] = final
+            # 缓存翻译结果（key 为术语替换后的文本）
+            self.translated_cache[text_with_terms] = final
             self.safe_log(f"✔ 翻译完成 ({self.use_engine}): \"{cleaned}\" → \"{final}\"")
             time.sleep(0.5)
             return final
 
         except Exception as e:
             self.safe_log(f"翻译失败 ({self.use_engine}): {e} → 原文: \"{cleaned}\"")
-            fallback = self.cleaner.full_clean(self.cleaner.safe_utf8(text))
+            fallback = self.cleaner.full_clean(self.cleaner.safe_utf8(original_text))
             return fallback
 
 
@@ -464,7 +484,12 @@ class CADChineseTranslator:
             if entity.dxftype() == "TEXT":
                 entity.dxf.text = cleaned_text
             elif entity.dxftype() == "MTEXT":
-                font = getattr(self, 'default_font', 'SimSun')
+                # 如果当前为中 → 法翻译，则强制使用 Arial Unicode MS
+                if hasattr(self, 'lang_config') and self.lang_config == 'zh_to_fr':
+                    font = 'Arial Unicode MS'
+                else:
+                    font = getattr(self, 'default_font', 'SimSun')
+
                 formatted = fr"{{\\f{font}|b0|i0|c134;{cleaned_text}}}"
                 entity.text = formatted
                 entity.dxf.text = formatted
@@ -494,18 +519,20 @@ class CADChineseTranslator:
                         continue
         except Exception as file_err:
             self.safe_log(f" 创建 CSV 文件失败: {file_err}")
-    def translate_cad_file(self, input_file, output_file, lang_config, include_blocks=False):
+    def translate_cad_file(self, input_file, output_file, lang_config, include_blocks=False, preferred_encoding=None):
+        self.lang_config = lang_config
         self.safe_log(f"正在读取: {input_file}")
         self.safe_log(f"当前写入字体: {self.default_font}")
         # 尝试不同的编码方式读取文件
         doc = None
-        encodings_to_try = ['utf-8', 'gbk', 'gb2312', 'cp1252']
-        
+        encoding_used = None  # ✅ 新增
+        encodings_to_try = [preferred_encoding] if preferred_encoding else ['utf-8', 'gbk', 'gb2312', 'cp1252']
         for encoding in encodings_to_try:
             try:
                 self.safe_log(f"尝试使用 {encoding} 编码读取文件...")
                 doc = ezdxf.readfile(input_file, encoding=encoding)
                 self.safe_log(f"成功使用 {encoding} 编码读取文件")
+                encoding_used = encoding  # ✅ 成功读取后，保存当前使用的编码
                 break
             except Exception as e:
                 self.safe_log(f"使用 {encoding} 编码失败: {e}")
@@ -513,8 +540,9 @@ class CADChineseTranslator:
         if doc is None:
             raise Exception("无法使用任何编码方式读取DXF文件")
         #  在提取之前清理一次（防止含非法字符的实体阻断提取）
+        self.actual_encoding_used = encoding_used or 'utf-8'
         self.clean_all_entities(doc)
-
+        # 设置 UTF-8 编码标识
 
         #  然后提取文本进行翻译
         items = self.extract_text_entities(doc, lang_config, include_blocks)
@@ -582,8 +610,10 @@ class CADChineseTranslator:
             clean_entities(block, f"block:{block.name}")
             #  翻译后再次清理（防止翻译引擎返回代理字符）
         self.clean_all_entities(doc)
+
         try:
-            doc.saveas(output_file, encoding='utf-8')
+            save_encoding = getattr(self, 'actual_encoding_used', 'utf-8')
+            doc.saveas(output_file, encoding=save_encoding)
             self.safe_log(f" 文件成功保存: {output_file}")
         except UnicodeEncodeError as e:
             self.safe_log(f" 文件保存失败: {e}")
@@ -624,7 +654,7 @@ class CADTranslatorGUI:
     def __init__(self):
         self.log_text = None
         self.root = tk.Tk()
-        self.root.title("Honsen内部 CAD中法互译工具 v2.2 - 编码问题修复版")
+        self.root.title("Honsen内部 CAD中法互译工具 v3.0")
         self.root.geometry("850x750")
         self.root.resizable(True, True)
         self.cleaner = TextCleaner()
@@ -637,7 +667,7 @@ class CADTranslatorGUI:
         except:
             pass  # 如果图标文件不存在，忽略错误
         self.deepl_key = tk.StringVar()
-        self.chatgpt_key = tk.StringVar()
+        
         # 日志队列
         self.log_queue = queue.Queue()
         
@@ -652,11 +682,12 @@ class CADTranslatorGUI:
         self.load_api_keys()
         self.setup_ui()
         self.check_log_queue()
+        
     def _create_translator(self):
         translator = CADChineseTranslator(log_callback=self.log_message)
         translator.use_engine = self.translation_engine.get().strip()
         translator.deepl_api_key = self.deepl_key.get().strip()
-        translator.chatgpt_api_key = self.chatgpt_key.get().strip()
+       
         return translator
     def safe_text_for_tkinter(self, text):
         """
@@ -706,7 +737,7 @@ class CADTranslatorGUI:
         main_frame.columnconfigure(1, weight=1)
         main_frame.rowconfigure(7, weight=1)
 
-        title_label = tk.Label(main_frame, text="Honsen非洲内部 CAD中法互译工具 v2.2\n编码问题修复版 - 先将dwg文件转换为dxf文件", 
+        title_label = tk.Label(main_frame, text="Honsen非洲内部 CAD中法互译工具 v3.0\n UTF-8乱码就用GBK - 先将dwg文件转换为dxf文件", 
                             font=('宋体', 16, 'bold'))
         title_label.grid(row=0, column=0, columnspan=3, pady=(0, 20))
 
@@ -734,7 +765,11 @@ class CADTranslatorGUI:
 
         options_frame = ttk.LabelFrame(options_api_container, text="翻译选项", padding="10")
         options_frame.grid(row=0, column=0, sticky=(tk.N, tk.EW), padx=(0, 10))
-
+        ttk.Label(options_frame, text="DXF 编码:").grid(row=6, column=0, sticky=tk.W, pady=5)
+        self.encoding_var = tk.StringVar(value='utf-8')
+        encoding_dropdown = ttk.Combobox(options_frame, textvariable=self.encoding_var, state='readonly', width=20)
+        encoding_dropdown['values'] = ['utf-8', 'gbk', 'gb2312', 'cp936', 'cp1252']
+        encoding_dropdown.grid(row=6, column=1, sticky=tk.W)
         ttk.Label(options_frame, text="翻译模式:").grid(row=0, column=0, sticky=tk.W, pady=5)
         mode_frame = ttk.Frame(options_frame)
         mode_frame.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(10, 0))
@@ -747,7 +782,7 @@ class CADTranslatorGUI:
 
         ttk.Label(options_frame, text="翻译引擎:").grid(row=4, column=0, sticky=tk.W, pady=5)
         self.translation_engine = tk.StringVar(value='google')
-        engine_dropdown = ttk.Combobox(options_frame, textvariable=self.translation_engine, state='readonly', values=['google', 'deepl', 'chatgpt'], width=20)
+        engine_dropdown = ttk.Combobox(options_frame, textvariable=self.translation_engine, state='readonly', values=['google', 'deepl'], width=20)
         engine_dropdown.grid(row=4, column=1, sticky=tk.W)
         engine_note = tk.Label(options_frame, text="DeepL/ChatGPT 需配置 API Key", font=('宋体', 9), fg='gray')
         engine_note.grid(row=5, column=0, columnspan=2, sticky=tk.W)
@@ -758,12 +793,7 @@ class CADTranslatorGUI:
         ttk.Entry(api_frame, textvariable=self.deepl_key, width=40, show="*").grid(
             row=0, column=1, sticky=(tk.W, tk.E), padx=5
         )
-        ttk.Label(api_frame, text="ChatGPT API Key:").grid(row=1, column=0, sticky=tk.W, pady=3)
-        ttk.Entry(api_frame, textvariable=self.chatgpt_key, width=40, show="*").grid(
-            row=1, column=1, sticky=(tk.W, tk.E), padx=5
-        )
         self.deepl_key.trace_add("write", lambda *args: self.save_api_keys())
-        self.chatgpt_key.trace_add("write", lambda *args: self.save_api_keys())
 
         # 添加按钮组到 api_frame 下方
         style = ttk.Style()
@@ -1023,7 +1053,6 @@ class CADTranslatorGUI:
 
         # 设置用户输入的 API Key
         translator.deepl_api_key = self.deepl_key.get().strip()
-        translator.chatgpt_api_key = self.chatgpt_key.get().strip()
         if translator.deepl_api_key:
             import deepl
             try:
@@ -1048,13 +1077,18 @@ class CADTranslatorGUI:
         
         # 在新线程中执行翻译
         def translation_thread():
+            
             try:
+                preferred_encoding = self.encoding_var.get()
                 translator.translate_cad_file(
                     self.input_file.get(),
                     output_file,
                     self.translation_mode.get(),
-                    self.translate_blocks.get()
+                    self.translate_blocks.get(),
+                    preferred_encoding=preferred_encoding
                 )
+                save_encoding = getattr(translator, 'actual_encoding_used', preferred_encoding)
+                translator.safe_log(f"使用编码 {save_encoding} 保存 DXF 文件")
                 self.root.after(0, self.translation_complete, True, "翻译完成！")
             except Exception as e:
                 import traceback

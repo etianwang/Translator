@@ -28,23 +28,32 @@ TERM_DICT, TERM_DICT_WARNING = load_term_dict()
 if TERM_DICT_WARNING:
     print(TERM_DICT_WARNING)
 
+import re
 def apply_term_dict(text, src_lang, tgt_lang):
-    if not isinstance(text, str):
-        return text  # ✅ 非字符串直接跳过
-    if not TERM_DICT:
+    if not isinstance(text, str) or not TERM_DICT:
         return text
-    for zh_term, variants in TERM_DICT.items():
-        if not isinstance(variants, list) or len(variants) < 2:
-            continue
-        en_term, fr_term = str(variants[0]), str(variants[1])
+
+    for term in TERM_DICT.values():
+        zh = term.get("zh", "")
+        fr_list = term.get("fr", [])
+        en_list = term.get("en", [])
+
         if src_lang == "zh" and tgt_lang == "fr":
-            text = text.replace(zh_term, fr_term)
-        elif src_lang == "zh" and tgt_lang == "en":
-            text = text.replace(zh_term, en_term)
+            if zh and fr_list:
+                text = text.replace(zh, fr_list[0])
+
         elif src_lang == "fr" and tgt_lang == "zh":
-            text = text.replace(fr_term, zh_term)
+            for fr in fr_list:
+                text = text.replace(fr, zh)
+
+        elif src_lang == "zh" and tgt_lang == "en":
+            if zh and en_list:
+                text = text.replace(zh, en_list[0])
+
         elif src_lang == "en" and tgt_lang == "zh":
-            text = text.replace(en_term, zh_term)
+            for en in en_list:
+                text = text.replace(en, zh)
+
     return text
 def cache_key(text, engine, lang_pair):
     return hashlib.md5(f"{engine}_{lang_pair}_{text}".encode("utf-8")).hexdigest()

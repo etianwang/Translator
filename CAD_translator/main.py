@@ -66,7 +66,7 @@ def pick_available_font():
     return "Arial"  # 默认 fallback
 
 
-CONFIG_PATH = os.path.expanduser("~/.cad_translator_config.json")
+CONFIG_PATH = os.path.expanduser("cad_translator_config.json")
 
 def remove_emoji(text):
     import re
@@ -494,12 +494,12 @@ class CADChineseTranslator:
                         continue
         except Exception as file_err:
             self.safe_log(f" 创建 CSV 文件失败: {file_err}")
-    def translate_cad_file(self, input_file, output_file, lang_config, include_blocks=False):
+    def translate_cad_file(self, input_file, output_file, lang_config, include_blocks=False, preferred_encoding=None):
         self.safe_log(f"正在读取: {input_file}")
         self.safe_log(f"当前写入字体: {self.default_font}")
         # 尝试不同的编码方式读取文件
         doc = None
-        encodings_to_try = ['utf-8', 'gbk', 'gb2312', 'cp1252']
+        encodings_to_try = [preferred_encoding] if preferred_encoding else ['utf-8', 'gbk', 'gb2312', 'cp1252']
         
         for encoding in encodings_to_try:
             try:
@@ -628,8 +628,11 @@ class CADTranslatorGUI:
         self.root.geometry("850x750")
         self.root.resizable(True, True)
         self.cleaner = TextCleaner()
+        self.root.update_idletasks()
+        self.root.minsize(1250, 960)
+        self.root.maxsize(1250, 960)
         try:
-            icon_path = resource_path("ico.ico")
+            icon_path = resource_path("icon.ico")
             self.root.iconbitmap(icon_path)
         except:
             pass  # 如果图标文件不存在，忽略错误
@@ -731,7 +734,11 @@ class CADTranslatorGUI:
 
         options_frame = ttk.LabelFrame(options_api_container, text="翻译选项", padding="10")
         options_frame.grid(row=0, column=0, sticky=(tk.N, tk.EW), padx=(0, 10))
-
+        ttk.Label(options_frame, text="DXF 编码:").grid(row=6, column=0, sticky=tk.W, pady=5)
+        self.encoding_var = tk.StringVar(value='utf-8')
+        encoding_dropdown = ttk.Combobox(options_frame, textvariable=self.encoding_var, state='readonly', width=20)
+        encoding_dropdown['values'] = ['utf-8', 'gbk', 'gb2312', 'cp936', 'cp1252']
+        encoding_dropdown.grid(row=6, column=1, sticky=tk.W)
         ttk.Label(options_frame, text="翻译模式:").grid(row=0, column=0, sticky=tk.W, pady=5)
         mode_frame = ttk.Frame(options_frame)
         mode_frame.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(10, 0))
@@ -838,7 +845,7 @@ class CADTranslatorGUI:
         changelog_scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
 
         # 尝试从外部 JSON 文件加载 changelog 内容
-        changelog_path = os.path.join(os.getcwd(), "changelog.json")
+        changelog_path = os.path.join("changelog.json")
         try:
             with open(changelog_path, 'r', encoding='utf-8') as f:
                 changelog_data = json.load(f)
@@ -1045,12 +1052,15 @@ class CADTranslatorGUI:
         
         # 在新线程中执行翻译
         def translation_thread():
+            
             try:
+                preferred_encoding = self.encoding_var.get()
                 translator.translate_cad_file(
                     self.input_file.get(),
                     output_file,
                     self.translation_mode.get(),
-                    self.translate_blocks.get()
+                    self.translate_blocks.get(),
+                    preferred_encoding=preferred_encoding
                 )
                 self.root.after(0, self.translation_complete, True, "翻译完成！")
             except Exception as e:
@@ -1086,7 +1096,6 @@ class CADTranslatorGUI:
 
     def run(self):
         self.root.mainloop()
-
 
 def main():
     app = CADTranslatorGUI()

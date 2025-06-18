@@ -14,6 +14,11 @@ from CAD_translator.CAD_translator_fn import run_cad_gui
 from PPT_translator.PPT_translator_fn import run_ppt_gui
 from EXCEL_translator.EXCEL_translator_fn import run_excel_gui
 
+if getattr(sys, 'frozen', False):
+    # 在打包后的 EXE 中运行
+    bundle_dir = sys._MEIPASS
+    os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = os.path.join(bundle_dir, "plugins", "platforms")
+
 def resource_path(relative_path):
     """兼容 PyInstaller 的资源路径"""
     if hasattr(sys, '_MEIPASS'):

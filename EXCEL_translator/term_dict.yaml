@@ -1,73 +1,861 @@
-套: [set, ensemble]
-备注: [remark, remarque]
-系统说明: [system description, description du système]
-系统: [system, système]
-系统名称: [system name, nom du système]
-系统描述: [system description, description du système]
-系统说明: [system explanation, explication du système]
-出厂价: [factory price, prix d'usine]
-系统配置: [system configuration, configuration du système]
-个: [piece, pièce]
-件: [item, article]
-台: [unit, unité]
-设备: [device, appareil]
-名称: [name, nom]
-描述: [description, description]
-设备名称: [device name, nom de l'appareil]
-设备描述: [device description, description de l'appareil]
-总价: [total price, prix total]
-价格: [price, prix]
-单价: [unit price, prix unitaire]
-数量: [quantity, quantité]
-单位: [unit, unité]
-序号: [No., No]
-预估价格: [estimated price, prix estimé]
-预估价: [estimated price, prix estimé]
-材料描述: [material description, description du matériau]
-材料名称: [material name, nom du matériau]
-材料: [material, matériau]
-材料单价: [material unit price, prix unitaire du matériau]
-材料数量: [material quantity, quantité de matériau]
-材料单位: [material unit, unité de matériau]
-材料总价: [material total price, prix total du matériau]
-材料预估价: [material estimated price, prix estimé du matériau]
-照片: [photo, photo]
-尺寸: [size, taille]
-图片: [image, image]
-规格: [specification, spécification]
-询盘: [inquiry, demande de prix]
-询价: [price inquiry, demande de prix]
-报价: [quotation, devis]
-报价单: [quotation sheet, fiche de devis]
-询价单: [price inquiry sheet, fiche de demande de prix]
-科特: [Côte d'Ivoire, Côte d'Ivoire]
-一次报价: [one-time quotation, devis unique]
-首次报价: [first quotation, première offre]
-二次报价: [second quotation, deuxième offre]
-最终价格: [final price, prix final]
-底价: [bottom price, prix plancher]
-价格表: [price list, liste de prix]
-暖通: [HVAC, CVC]
-强电: [HV, CFO]
-弱电: [LV, CFA]
-电气: [electrical, électrique]
-暖通系统: [HVAC system, système CVC]
-电气系统: [electrical system, système électrique]
-给排水系统: [water supply and drainage system, système de Plomberie]
-给排水: [water supply and drainage, Plomberie]
-空调: [air conditioning, climatisation]
-排风: [exhaust, évacuation d'air]
-回风: [return air, retour]
-送风: [supply air, soufflage]
-排烟: [smoke exhaust, désenfumage]
-消防: [fire protection, protection incendie]
-火灾: [fire, incendie]
-消防系统: [fire protection system, système de protection incendie]
-消防栓: [fire hydrant, borne d'incendie]
-灭火器: [fire extinguisher, extincteur]
-阀门: [valve, vanne]
-管道: [pipeline, tuyauterie]
-布线: [wiring, câblage]
-采购: [procurement, achat]
-采购单: [purchase order, bon de commande]
-采购清单: [purchase list, liste d'achats]
+套:
+  zh: 套
+  en:
+  - set
+  fr:
+  - ensemble
+备注:
+  zh: 备注
+  en:
+  - remark
+  fr:
+  - remarque
+系统说明:
+  zh: 系统说明
+  en:
+  - system explanation
+  fr:
+  - explication du système
+系统:
+  zh: 系统
+  en:
+  - system
+  fr:
+  - système
+系统名称:
+  zh: 系统名称
+  en:
+  - system name
+  fr:
+  - nom du système
+系统描述:
+  zh: 系统描述
+  en:
+  - system description
+  fr:
+  - description du système
+出厂价:
+  zh: 出厂价
+  en:
+  - factory price
+  fr:
+  - prix d'usine
+系统配置:
+  zh: 系统配置
+  en:
+  - system configuration
+  fr:
+  - configuration du système
+个:
+  zh: 个
+  en:
+  - piece
+  fr:
+  - pièce
+件:
+  zh: 件
+  en:
+  - item
+  fr:
+  - article
+台:
+  zh: 台
+  en:
+  - unit
+  fr:
+  - unité
+设备:
+  zh: 设备
+  en:
+  - device
+  fr:
+  - appareil
+  - équipement
+名称:
+  zh: 名称
+  en:
+  - name
+  fr:
+  - nom
+描述:
+  zh: 描述
+  en:
+  - description
+  fr:
+  - description
+设备名称:
+  zh: 设备名称
+  en:
+  - device name
+  fr:
+  - nom des appareils
+  - nom de l'appareils
+  - nom des équipements
+  - nom de l'équipements
+设备描述:
+  zh: 设备描述
+  en:
+  - device description
+  fr:
+  - description des appareils
+  - description de l'appareil
+总价:
+  zh: 总价
+  en:
+  - total price
+  fr:
+  - prix total
+价格:
+  zh: 价格
+  en:
+  - price
+  fr:
+  - prix
+单价:
+  zh: 单价
+  en:
+  - unit price
+  fr:
+  - prix unitaire
+数量:
+  zh: 数量
+  en:
+  - quantity
+  fr:
+  - quantité
+  - QTE
+单位:
+  zh: 单位
+  en:
+  - unit
+  fr:
+  - unité
+  - UTE
+序号:
+  zh: 序号
+  en:
+  - No.
+  fr:
+  - No.
+  - numéro
+  - N°
+  - N° de série
+预估价格:
+  zh: 预估价格
+  en:
+  - estimated price
+  fr:
+  - prix estimé
+预估价:
+  zh: 预估价
+  en:
+  - estimated price
+  fr:
+  - prix estimé
+材料描述:
+  zh: 材料描述
+  en:
+  - material description
+  fr:
+  - description des matériaux
+  - description de matériau
+材料名称:
+  zh: 材料名称
+  en:
+  - material name
+  fr:
+  - nom du matériau
+材料:
+  zh: 材料
+  en:
+  - material
+  fr:
+  - matériau
+材料单价:
+  zh: 材料单价
+  en:
+  - material unit price
+  fr:
+  - prix unitaire du matériau
+材料数量:
+  zh: 材料数量
+  en:
+  - material quantity
+  fr:
+  - quantité de matériau
+材料单位:
+  zh: 材料单位
+  en:
+  - material unit
+  fr:
+  - unité de matériau
+材料总价:
+  zh: 材料总价
+  en:
+  - material total price
+  fr:
+  - prix total du matériau
+材料预估价:
+  zh: 材料预估价
+  en:
+  - material estimated price
+  fr:
+  - prix estimé du matériau
+照片:
+  zh: 照片
+  en:
+  - photo
+  fr:
+  - photo
+  - photos
+尺寸:
+  zh: 尺寸
+  en:
+  - size
+  fr:
+  - taille
+图片:
+  zh: 图片
+  en:
+  - image
+  fr:
+  - images
+  - images
+规格:
+  zh: 规格
+  en:
+  - specification
+  fr:
+  - spécification
+询盘:
+  zh: 询盘
+  en:
+  - inquiry
+  fr:
+  - demande de prix
+询价:
+  zh: 询价
+  en:
+  - price inquiry
+  fr:
+  - demande de prix
+报价:
+  zh: 报价
+  en:
+  - quotation
+  fr:
+  - devis
+报价单:
+  zh: 报价单
+  en:
+  - quotation sheet
+  fr:
+  - fiche de devis
+询价单:
+  zh: 询价单
+  en:
+  - price inquiry sheet
+  fr:
+  - fiche de demande de prix
+科特:
+  zh: 科特
+  en:
+  - Côte d'Ivoire
+  fr:
+  - Côte d'Ivoire
+一次报价:
+  zh: 一次报价
+  en:
+  - one-time quotation
+  fr:
+  - devis unique
+首次报价:
+  zh: 首次报价
+  en:
+  - first quotation
+  fr:
+  - première offre
+二次报价:
+  zh: 二次报价
+  en:
+  - second quotation
+  fr:
+  - deuxième offre
+最终价格:
+  zh: 最终价格
+  en:
+  - final price
+  fr:
+  - prix final
+底价:
+  zh: 底价
+  en:
+  - bottom price
+  fr:
+  - prix plancher
+价格表:
+  zh: 价格表
+  en:
+  - price list
+  fr:
+  - liste de prix
+暖通:
+  zh: 暖通
+  en:
+  - HVAC
+  fr:
+  - CVC
+强电:
+  zh: 强电
+  en:
+  - High Voltage
+  fr:
+  - Courant Fort
+弱电:
+  zh: 弱电
+  en:
+  - Low Voltage
+  fr:
+  - Courant Faible
+电气:
+  zh: 电气
+  en:
+  - electrical
+  fr:
+  - électrique
+暖通:
+  zh: 暖通
+  en:
+  - HVAC
+  fr:
+  - CVC
+暖通空调:
+  zh: 暖通空调
+  en:
+  - HVAC
+  fr:
+  - CVC
+电气系统:
+  zh: 电气系统
+  en:
+  - electrical system
+  fr:
+  - système électrique
+给排水:
+  zh: 给排水
+  en:
+  - water supply and drainage system
+  fr:
+  - plomberie
+  - système de plomberie
+空调:
+  zh: 空调
+  en:
+  - air conditioning
+  fr:
+  - climatisation
+排风:
+  zh: 排风
+  en:
+  - exhaust
+  fr:
+  - évacuation d'air
+回风:
+  zh: 回风
+  en:
+  - return air
+  fr:
+  - retour
+送风:
+  zh: 送风
+  en:
+  - supply air
+  fr:
+  - soufflage
+排烟:
+  zh: 排烟
+  en:
+  - smoke exhaust
+  fr:
+  - désenfumage
+消防:
+  zh: 消防
+  en:
+  - fire protection
+  fr:
+  - protection incendie
+火灾:
+  zh: 火灾
+  en:
+  - fire
+  fr:
+  - incendie
+消防系统:
+  zh: 消防系统
+  en:
+  - fire protection system
+  fr:
+  - système de protection incendie
+消防栓:
+  zh: 消防栓
+  en:
+  - fire hydrant
+  fr:
+  - borne d'incendie
+灭火器:
+  zh: 灭火器
+  en:
+  - fire extinguisher
+  fr:
+  - extincteur
+阀门:
+  zh: 阀门
+  en:
+  - valve
+  fr:
+  - vanne
+管道:
+  zh: 管道
+  en:
+  - pipeline
+  fr:
+  - tuyauterie
+布线:
+  zh: 布线
+  en:
+  - wiring
+  fr:
+  - câblage
+采购:
+  zh: 采购
+  en:
+  - procurement
+  fr:
+  - achat
+采购单:
+  zh: 采购单
+  en:
+  - purchase order
+  fr:
+  - bon de commande
+采购清单:
+  zh: 采购清单
+  en:
+  - purchase list
+  fr:
+  - liste d'achats
+强电系统:
+  zh: 强电系统
+  en:
+  - high voltage system
+  fr:
+  - système courant fort
+电力:
+  zh: 电力
+  en:
+  - electric power
+  fr:
+  - énergie électrique
+配电箱:
+  zh: 配电箱
+  en:
+  - distribution box
+  fr:
+  - tableau de distribution
+断路器:
+  zh: 断路器
+  en:
+  - circuit breaker
+  fr:
+  - disjoncteur
+插座:
+  zh: 插座
+  en:
+  - power socket
+  fr:
+  - prise de courant
+电缆桥架:
+  zh: 电缆桥架
+  en:
+  - cable tray
+  fr:
+  - chemin de câbles
+弱电系统:
+  zh: 弱电系统
+  en:
+  - low voltage system
+  fr:
+  - système courant faible
+网络布线:
+  zh: 网络布线
+  en:
+  - network wiring
+  fr:
+  - câblage réseau
+安防系统:
+  zh: 安防系统
+  en:
+  - security system
+  fr:
+  - système de sécurité
+报警系统:
+  zh: 报警系统
+  en:
+  - alarm system
+  fr:
+  - système d’alarme
+视频监控:
+  zh: 视频监控
+  en:
+  - video surveillance
+  fr:
+  - vidéosurveillance
+电话线路:
+  zh: 电话线路
+  en:
+  - telephone line
+  fr:
+  - ligne téléphonique
+给水管:
+  zh: 给水管
+  en:
+  - supply pipe
+  fr:
+  - conduite d’alimentation
+自来水:
+  zh: 自来水
+  en:
+  - tap water
+  fr:
+  - eau courante
+水表:
+  zh: 水表
+  en:
+  - water meter
+  fr:
+  - compteur d’eau
+水泵:
+  zh: 水泵
+  en:
+  - water pump
+  fr:
+  - pompe à eau
+水箱:
+  zh: 水箱
+  en:
+  - water tank
+  fr:
+  - réservoir d’eau
+管道接口:
+  zh: 管道接口
+  en:
+  - pipe connection
+  fr:
+  - raccord de tuyauterie
+排水管:
+  zh: 排水管
+  en:
+  - drain pipe
+  fr:
+  - conduite d’évacuation
+雨水管:
+  zh: 雨水管
+  en:
+  - rainwater pipe
+  fr:
+  - descente pluviale
+污水:
+  zh: 污水
+  en:
+  - sewage
+  fr:
+  - eaux usées
+地漏:
+  zh: 地漏
+  en:
+  - floor drain
+  fr:
+  - siphon de sol
+化粪池:
+  zh: 化粪池
+  en:
+  - septic tank
+  fr:
+  - fosse septique
+排水系统:
+  zh: 排水系统
+  en:
+  - drainage system
+  fr:
+  - système d’évacuation
+水处理:
+  zh: 水处理 
+  en:
+  - water treatment
+  fr:
+  - traitement de l'eau
+消防水池:
+  zh: 消防水池
+  en:
+  - fire water tank
+  fr:
+  - réservoir d'eau incendie
+消防泵:
+  zh: 消防泵
+  en:
+  - fire pump
+  fr:
+  - pompe à incendie
+泄压阀:
+  zh: 泄压阀
+  en:
+  - pressure relief valve
+  fr:
+  - soupape de décharge
+水管:
+  zh: 水管
+  en:
+  - water pipe
+  fr:
+  - tuyau d'eau
+水管接口:
+  zh: 水管接口
+  en:
+  - water pipe connection
+  fr:
+  - raccord de tuyau d'eau
+天花:
+  zh: 天花
+  en:
+  - ceiling
+  fr:
+  - plafond
+静电地板:
+  zh: 静电地板
+  en:
+  - anti-static floor
+  fr:
+  - sol antistatique
+地板:
+  zh: 地板
+  en:
+  - floor
+  fr:
+  - plancher
+瓷砖:
+  zh: 瓷砖
+  en:
+  - tile
+  fr:
+  - carrelage
+新风:
+  zh: 新风
+  en:
+  - fresh air
+  fr:
+  - air frais
+送风:
+  zh: 送风
+  en:
+  - supply air
+  fr:
+  - soufflage
+回风:
+  zh: 回风
+  en:
+  - return air
+  fr:
+  - air de retour
+风管:
+  zh: 风管
+  en:
+  - air duct
+  fr:
+  - conduit d'air
+布线:
+  zh: 布线
+  en:
+  - wiring
+  fr:
+  - câblage
+风口:
+  zh: 风口
+  en:
+  - air outlet
+  fr:
+  - sortie d'air
+风阀:
+  zh: 风阀
+  en:
+  - air valve
+  fr:
+  - vanne à air
+污水井:
+  zh: 污水井
+  en:
+  - sewage well
+  fr:
+  - puisard
+检修口:
+  zh: 检修口
+  en:
+  - inspection opening
+  fr:
+  - trappe
+风机:
+  zh: 风机
+  en:
+  - fan
+  fr:
+  - ventilateur
+开孔:
+  zh: 开孔
+  en:
+  - opening
+  fr:
+  - carottage
+立面图:
+  zh: 立面图
+  en:
+  - elevation drawing
+  fr:
+  - dessin d'élévation
+平面图:
+  zh: 平面图
+  en:
+  - plan
+  fr:
+  - plan
+电缆:
+  zh: 电缆
+  en:
+  - cable
+  fr:
+  - câble
+电线:
+  zh: 电线
+  en:
+  - wire
+  fr:
+  - fil
+光缆:
+  zh: 光缆
+  en:
+  - fiber optic cable
+  fr:
+  - câble à fibre optique
+光纤:
+  zh: 光纤
+  en:
+  - fiber optic
+  fr:
+  - fibre optique
+配电箱:
+  zh: 配电箱
+  en:
+  - distribution box
+  fr:
+  - tableau de distribution
+排风:
+  zh: 排风
+  en:
+  - exhaust air
+  fr:
+  - Extraction d’air
+排风扇:
+  zh: 排风扇
+  en:
+  - exhaust fan
+  fr:
+  - ventilateur d'extraction
+包扎带:
+  zh: 包扎带
+  en:
+  - bandage
+  fr:
+  - bandage
+生料带:
+  zh: 生料带
+  en:
+  - sealing tape
+  fr:
+  - ruban d'étanchéité
+路径:
+  zh: 路径
+  en:
+  - path
+  fr:
+  - chemin
+路径方向:
+  zh: 路径方向
+  en:
+  - path direction
+  fr:
+  - sens du chemin
+管道方向:
+  zh: 管道方向
+  en:
+  - pipe direction
+  fr:
+  - sens du tuyau
+油浸式变压器:
+  zh: 油浸式变压器
+  en:
+  - oil-immersed transformer
+  fr:
+  - transformateur immergé
+干式变压器:
+  zh: 干式变压器
+  en:
+  - dry-type transformer
+  fr:
+  - transformateur sec
+变压柜:
+  zh: 变压柜
+  en:
+  - transformer cabinet
+  fr:
+  - armoire de transformateur
+  - cellule de transformateur
+高压柜:
+  zh: 高压柜
+  en:
+  - high voltage cabinet
+  fr:
+  - cellule HT
+  - armoire haute tension
+  - cellule haute tension
+  - armoire HT
+低压柜:
+  zh: 低压柜
+  en:
+  - low voltage cabinet
+  fr:
+  - cellule BT
+  - armoire basse tension
+  - cellule basse tension
+  - armoire BT
+ 
+中压柜:
+  zh: 中压柜
+  en:
+  - medium voltage cabinet
+  fr:
+  - cellule MT
+  - armoire moyenne tension
+  - cellule moyenne tension
+  - armoire MT
+电缆沟:
+  zh: 电缆沟
+  en:
+  - cable trench
+  fr:
+  - caniveau de câbles
+线管:
+  zh: 线管
+  en:
+  - conduit
+  fr:
+  - conduit
+
+

@@ -126,7 +126,7 @@ class PPTTranslatorUI(QtWidgets.QWidget):
         lang_layout = QtWidgets.QHBoxLayout()
         lang_label = QtWidgets.QLabel("目标语言：")
         self.lang_combo = QtWidgets.QComboBox()
-        self.lang_combo.addItems(["en", "zh", "fr", "de", "es", "ja", "ko", "ru", "it", "pt"])
+        self.lang_combo.addItems(["en", "zh-CN", "fr", "de", "es", "ja", "ko", "ru", "it", "pt"])
         self.lang_combo.setCurrentText("fr")
         lang_layout.addWidget(lang_label)
         lang_layout.addWidget(self.lang_combo)

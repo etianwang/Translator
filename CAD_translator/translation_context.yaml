@@ -1,12 +1,10 @@
 context_zh_to_fr:
   入口: entrée
-  冷凝水管: conduite de condensat
-  冷却塔: tour de refroidissement
-  冷热水: eau chaude et froide
+  冷凝管: conduite de condensat
   出口: sortie
   出风口: bouche de soufflage
-  卫生间: salle de bain
-  厨房: cuisine
+  卫生间: Toilette
+  厕所: Toilette
   吊顶: faux plafond
   回风口: bouche de reprise
   地面: sol
@@ -15,8 +13,6 @@ context_zh_to_fr:
   天花图: plan de plafond
   屏幕: écran
   开关: interrupteur
-  弱电: courant faible
-  强电: courant fort
   报警: alarme
   排水管: évacuation d'eau
   排烟: évacuation fumée
@@ -30,10 +26,8 @@ context_zh_to_fr:
   桥架: chemin de câbles
   楼梯: escalier
   水管: conduite d'eau
-  消防: sécurité incendie
-  照明: éclairage
-  电梯: ascenseur
-  监控: vidéosurveillance
+  消防系统: SSI
+  监控: CCTP
   空调: climatisation
   空调机: unité de climatisation
   管道井: gaine technique
@@ -45,3 +39,65 @@ context_zh_to_fr:
   风机: ventilateur
   风机盘管: ventilo-convecteur
   风管: conduite d'air
+  底层: rez-de-chaussée
+  一层: RDC
+  二层: R+1
+  三层: R+2
+  四层: R+3
+  五层: R+4
+  六层: R+5
+  七层: R+6
+  地下层: SSL
+  地下室: SSL
+  负一层: SS1
+  负二层: SS2
+  负三层: SS3
+  地下一层: SS1
+  地下二层: SS2
+  地下三层: SS3
+  第一层: RDC
+  第二层: R+1
+  第三层: R+2
+  第四层: R+3
+  第五层: R+4
+  第六层: R+5
+  第七层: R+6 
+  一楼: RDC
+  二楼: R+1
+  三楼: R+2
+  四楼: R+3
+  五楼: R+4
+  六楼: R+5
+  七楼: R+6
+  检查口: Trappe de visite
+  雨水井: Regard d'EP
+  电缆: Câble
+  电线: fil
+  线管: gaine de câbles
+  内机: unité intérieure
+  外机: unité extérieure
+  顶层: Toiture
+  消防水池: BAEI
+  生活水池: BAED
+  目录: Catalogue
+  布置: implantation
+  平面图: plan
+  给水: alimentaton en eau
+  排水: drainage
+  强电: CFO
+  弱电: CFA
+  系统图: Schéma
+  化粪池: Fosse septique
+  给水平面图: Plan d'alimentation en eau
+  排水平面图: Plan d'évacuation des eaux
+  给排水平面图: Plan de plomberie
+  给排水图: Plan de plomberie
+  精装: finition
+  精装平面图: plan de finition
+  精装图: plan de finition
+  图例: légende
+  科特: CI
+  庭院: cour
+  污水: EU/EV
+  开孔: carottage
+  预留洞口: ouverture
