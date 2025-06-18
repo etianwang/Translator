@@ -832,7 +832,7 @@ class CADTranslatorGUI:
         footer_frame = ttk.Frame(main_frame)
         footer_frame.grid(row=9, column=0, columnspan=3, pady=(10, 5), sticky=(tk.W, tk.E))
         footer_frame.columnconfigure((0, 1, 2), weight=1)
-        ttk.Label(footer_frame, text="作者: 王一健").grid(row=0, column=0, sticky=tk.W)
+        ttk.Label(footer_frame, text="作者: Etienne").grid(row=0, column=0, sticky=tk.W)
         ttk.Label(footer_frame, text="邮箱：etn@live.com").grid(row=0, column=1, sticky=tk.EW)
         ttk.Label(footer_frame, text="翻译完需要打开CAD调整文字位置").grid(row=0, column=2, sticky=tk.E)
 
@@ -897,7 +897,7 @@ class CADTranslatorGUI:
         bottom_frame.pack(fill='x', pady=(15, 0))
 
         info_label = tk.Label(bottom_frame, 
-                            text="© 2025 Honsen非洲 - CAD中法互译工具 v2.2 | 编码问题修复版", 
+                            text="© 2025 Honsen - CAD中法互译工具", 
                             font=('Microsoft YaHei', 9), fg='gray')
         info_label.pack()
     def browse_input_file(self):
