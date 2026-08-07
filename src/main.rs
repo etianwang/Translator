@@ -135,12 +135,12 @@ slint::slint! {
         in-out property <[string]> models;
         in-out property <[string]> queue;
         in-out property <string> summary: "0 个任务  ·  已完成 0 个";
+        in-out property <string> account-info: "正在加载账户信息…";
         in-out property <bool> ocr-enabled: false;
         in-out property <bool> translate-filename: true;
         callback add-files();
         callback choose-output();
         callback start-translation();
-        callback refresh-metadata();
 
         VerticalLayout {
             spacing: 0px;
@@ -180,7 +180,13 @@ slint::slint! {
                         Text { text: "输出目录"; color: #98a2b2; font-size: 13px; }
                         HorizontalLayout { spacing: 8px; LineEdit { text <=> root.output-dir; horizontal-stretch: 1; } Button { text: "选择"; clicked => { root.choose-output(); } } }
                         Rectangle { vertical-stretch: 1; }
-                        Button { text: "刷新账户 / 模型信息"; clicked => { root.refresh-metadata(); } }
+                        Rectangle { height: 118px; border-radius: 10px; background: #202530; border-width: 1px; border-color: #414957;
+                            VerticalLayout { padding: 12px; spacing: 6px;
+                                Text { text: "账户信息"; color: white; font-size: 16px; font-weight: 700; }
+                                Text { text: root.account-info; color: #b8c2cf; font-size: 13px; wrap: word-wrap; }
+                                Text { text: "每 30 秒自动刷新"; color: #6fbde4; font-size: 12px; }
+                            }
+                        }
                     }
                 }
                 Rectangle {
@@ -281,6 +287,7 @@ fn run_slint(state: AppState, runtime: Arc<tokio::runtime::Runtime>) -> Result<(
                 .map(|x| SharedString::from(x.engine_name))
                 .collect::<Vec<_>>(),
         ))));
+        ui.set_account_info(account_summary(&meta.account).into());
         ui.set_notice(format!("账户可用额度：{} 字", meta.account.total_words).into());
     }
     refresh(&ui, &state, &runtime);
@@ -300,39 +307,6 @@ fn run_slint(state: AppState, runtime: Arc<tokio::runtime::Runtime>) -> Result<(
         if let Some(path) = rfd::FileDialog::new().pick_folder() {
             if let Some(ui) = weak.upgrade() {
                 ui.set_output_dir(path.display().to_string().into());
-            }
-        }
-    });
-    let weak = ui.as_weak();
-    let metadata_state = state.clone();
-    let metadata_runtime = runtime.clone();
-    let metadata_languages = language_codes.clone();
-    ui.on_refresh_metadata(move || {
-        if let Some(ui) = weak.upgrade() {
-            match metadata_runtime.block_on(fetch_metadata(&metadata_state)) {
-                Ok(meta) => {
-                    let languages = meta
-                        .languages
-                        .iter()
-                        .map(|x| {
-                            let name = chinese_language_name(&x.language_code, &x.language_name);
-                            metadata_languages
-                                .lock()
-                                .unwrap()
-                                .insert(name.clone(), x.language_code.clone());
-                            SharedString::from(name)
-                        })
-                        .collect::<Vec<_>>();
-                    ui.set_languages(ModelRc::new(Rc::new(VecModel::from(languages))));
-                    ui.set_models(ModelRc::new(Rc::new(VecModel::from(
-                        meta.models
-                            .into_iter()
-                            .map(|x| SharedString::from(x.engine_name))
-                            .collect::<Vec<_>>(),
-                    ))));
-                    ui.set_notice(format!("账户可用额度：{} 字", meta.account.total_words).into());
-                }
-                Err(e) => ui.set_notice(e.to_string().into()),
             }
         }
     });
@@ -374,6 +348,7 @@ fn run_slint(state: AppState, runtime: Arc<tokio::runtime::Runtime>) -> Result<(
         move || {
             if let Some(ui) = weak.upgrade() {
                 if let Ok(meta) = timer_runtime.block_on(fetch_metadata(&timer_state)) {
+                    ui.set_account_info(account_summary(&meta.account).into());
                     ui.set_notice(format!("账户可用额度：{} 字", meta.account.total_words).into());
                 }
             }
@@ -400,6 +375,13 @@ fn chinese_language_name(code: &str, fallback: &str) -> String {
         _ => fallback,
     }
     .to_owned()
+}
+
+fn account_summary(account: &AccountInfo) -> String {
+    format!(
+        "总额度：{} 字\n会员额度：{} 字\n套餐额度：{} 字",
+        account.total_words, account.vip_words, account.bag_words
+    )
 }
 
 #[cfg(any())]
