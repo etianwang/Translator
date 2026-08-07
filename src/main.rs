@@ -3,21 +3,20 @@
 use std::{
     env, fs,
     path::{Path, PathBuf},
-    sync::Arc,
-    time::Duration,
+    sync::{mpsc, Arc},
+    time::{Duration, Instant},
 };
 
 use anyhow::{Context, Result};
 use axum::{
     extract::{Multipart, Path as AxumPath, State},
     http::StatusCode,
-    response::{IntoResponse, Response},
     routing::{delete, get, post},
     Json, Router,
 };
+use eframe::egui;
 use reqwest::multipart::{Form, Part};
 use rusqlite::{params, Connection, OptionalExtension};
-use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
@@ -25,10 +24,6 @@ use uuid::Uuid;
 
 const DOCLINGO_TRANSLATE_URL: &str = "https://api.doclingo.cn/api/core/external/translate";
 const DOCLINGO_API_URL: &str = "https://api.doclingo.cn/api/core/external";
-
-#[derive(RustEmbed)]
-#[folder = "frontend/dist/"]
-struct Frontend;
 
 #[derive(Clone)]
 struct AppState {
@@ -87,9 +82,14 @@ struct RetryRequest {
     output_dir: Option<String>,
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
+    if let Ok(exe) = env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            dotenvy::from_path(dir.join(".env")).ok();
+        }
+    }
     dotenvy::dotenv().ok();
+    let runtime = Arc::new(tokio::runtime::Runtime::new()?);
     let data_dir = env::current_dir()?.join("app-data");
     fs::create_dir_all(data_dir.join("inbox"))?;
     let db = Connection::open(data_dir.join("translator.db"))?;
@@ -99,63 +99,386 @@ async fn main() -> Result<()> {
         data_dir,
         client: reqwest::Client::new(),
     };
-    tokio::spawn(worker(state.clone()));
+    runtime.spawn(worker(state.clone()));
     let router = Router::new()
         .route("/api/jobs", get(list_jobs).post(create_jobs))
         .route("/api/jobs/{id}/retry", post(retry_job))
         .route("/api/jobs/{id}", delete(cancel_job))
         .route("/api/select-output-dir", post(select_output_dir))
         .route("/api/metadata", get(get_metadata))
-        .fallback(get(serve_frontend))
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http())
-        .with_state(state);
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
-    let address = listener.local_addr()?;
-    tokio::spawn(async move {
+        .with_state(state.clone());
+    let listener = runtime.block_on(tokio::net::TcpListener::bind("127.0.0.1:0"))?;
+    runtime.spawn(async move {
         if let Err(error) = axum::serve(listener, router).await {
             eprintln!("Translator API stopped: {error}");
         }
     });
-    let window_url = tauri::WebviewUrl::External(
-        format!("http://{address}")
-            .parse()
-            .context("invalid local application URL")?,
-    );
-    tauri::Builder::default()
-        .setup(move |app| {
-            tauri::WebviewWindowBuilder::new(app, "main", window_url.clone())
-                .title("Doclingo Translator")
-                .inner_size(1180.0, 780.0)
-                .min_inner_size(900.0, 620.0)
-                .build()?;
-            Ok(())
-        })
-        .run(tauri::generate_context!())
-        .context("native application stopped")
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size([1180.0, 780.0])
+            .with_min_inner_size([900.0, 620.0]),
+        ..Default::default()
+    };
+    eframe::run_native(
+        "Doclingo Translator",
+        options,
+        Box::new(|cc| Ok(Box::new(TranslatorApp::new(cc, state, runtime)))),
+    )
+    .map_err(|e| anyhow::anyhow!("native application stopped: {e}"))
 }
 
-async fn serve_frontend(uri: axum::http::Uri) -> Response {
-    let path = uri.path().trim_start_matches('/');
-    let asset_path = if path.is_empty() || Frontend::get(path).is_none() {
-        "index.html"
-    } else {
-        path
-    };
-    let asset = Frontend::get(asset_path);
-    match asset {
-        Some(asset) => (
-            [(
-                "content-type",
-                mime_guess::from_path(asset_path)
-                    .first_or_octet_stream()
-                    .as_ref(),
-            )],
-            asset.data,
-        )
-            .into_response(),
-        None => StatusCode::NOT_FOUND.into_response(),
+struct TranslatorApp {
+    state: AppState,
+    runtime: Arc<tokio::runtime::Runtime>,
+    files: Vec<PathBuf>,
+    jobs: Vec<Job>,
+    metadata: Option<Metadata>,
+    metadata_rx: Option<mpsc::Receiver<Result<Metadata, String>>>,
+    output_dir: String,
+    target_language: String,
+    model: String,
+    ocr_enabled: bool,
+    translate_filename: bool,
+    notice: String,
+    last_jobs_refresh: Instant,
+    last_metadata_refresh: Instant,
+}
+
+impl TranslatorApp {
+    fn new(
+        cc: &eframe::CreationContext<'_>,
+        state: AppState,
+        runtime: Arc<tokio::runtime::Runtime>,
+    ) -> Self {
+        let mut style = (*cc.egui_ctx.style()).clone();
+        style.visuals = egui::Visuals::dark();
+        style.visuals.widgets.inactive.bg_fill = egui::Color32::from_rgb(36, 40, 47);
+        style.visuals.selection.bg_fill = egui::Color32::from_rgb(255, 176, 24);
+        cc.egui_ctx.set_style(style);
+        let mut app = Self {
+            state,
+            runtime,
+            files: Vec::new(),
+            jobs: Vec::new(),
+            metadata: None,
+            metadata_rx: None,
+            output_dir: String::new(),
+            target_language: String::new(),
+            model: String::new(),
+            ocr_enabled: false,
+            translate_filename: true,
+            notice: "正在加载 Doclingo 模型、语言和账户信息…".into(),
+            last_jobs_refresh: Instant::now() - Duration::from_secs(2),
+            last_metadata_refresh: Instant::now() - Duration::from_secs(30),
+        };
+        app.refresh_metadata();
+        app
     }
+
+    fn refresh_metadata(&mut self) {
+        if self.metadata_rx.is_some() {
+            return;
+        }
+        self.last_metadata_refresh = Instant::now();
+        let state = self.state.clone();
+        let (tx, rx) = mpsc::channel();
+        self.runtime.spawn(async move {
+            let _ = tx.send(fetch_metadata(&state).await.map_err(|e| e.to_string()));
+        });
+        self.metadata_rx = Some(rx);
+    }
+
+    fn refresh_jobs(&mut self) {
+        if self.last_jobs_refresh.elapsed() < Duration::from_secs(1) {
+            return;
+        }
+        self.last_jobs_refresh = Instant::now();
+        if let Ok(jobs) = self.runtime.block_on(async {
+            let db = self.state.db.lock().await;
+            jobs_from(&db, "SELECT * FROM jobs ORDER BY created_at DESC", [])
+        }) {
+            self.jobs = jobs;
+        }
+    }
+
+    fn enqueue(&mut self) {
+        if self.files.is_empty() {
+            self.notice = "请先添加文件。".into();
+            return;
+        }
+        if !output_dir_writable(Path::new(&self.output_dir)) {
+            self.notice = "请选择可写入的输出文件夹。".into();
+            return;
+        }
+        if self.target_language.is_empty() || self.model.is_empty() {
+            self.notice = "请先选择输出语言和翻译模型。".into();
+            return;
+        }
+        let files = std::mem::take(&mut self.files);
+        match self.runtime.block_on(enqueue_paths(
+            &self.state,
+            files,
+            &self.output_dir,
+            &self.target_language,
+            &self.model,
+            self.ocr_enabled,
+            self.translate_filename,
+        )) {
+            Ok(jobs) => {
+                self.notice = format!("已加入 {} 个翻译任务。", jobs.len());
+                self.jobs.splice(0..0, jobs);
+            }
+            Err(e) => self.notice = e.to_string(),
+        }
+    }
+}
+
+impl eframe::App for TranslatorApp {
+    fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
+        ctx.request_repaint_after(Duration::from_millis(500));
+        if self.last_metadata_refresh.elapsed() >= Duration::from_secs(30) {
+            self.refresh_metadata();
+        }
+        if let Some(rx) = &self.metadata_rx {
+            if let Ok(result) = rx.try_recv() {
+                self.metadata_rx = None;
+                match result {
+                    Ok(metadata) => {
+                        if self.target_language.is_empty() {
+                            self.target_language = metadata
+                                .languages
+                                .first()
+                                .map(|x| x.language_code.clone())
+                                .unwrap_or_default();
+                        }
+                        if self.model.is_empty() {
+                            self.model = metadata
+                                .models
+                                .first()
+                                .map(|x| x.engine_name.clone())
+                                .unwrap_or_default();
+                        }
+                        self.metadata = Some(metadata);
+                        self.notice = "Doclingo 账户信息已刷新。".into();
+                    }
+                    Err(e) => self.notice = format!("无法获取 Doclingo 信息：{e}"),
+                }
+            }
+        }
+        for file in ctx.input(|i| i.raw.dropped_files.clone()) {
+            if let Some(path) = file.path {
+                if !self.files.contains(&path) {
+                    self.files.push(path);
+                }
+            }
+        }
+        self.refresh_jobs();
+        egui::SidePanel::left("sidebar")
+            .min_width(285.0)
+            .show(ctx, |ui| {
+                ui.add_space(14.0);
+                ui.heading(
+                    egui::RichText::new("▣  文档翻译")
+                        .color(egui::Color32::from_rgb(255, 180, 24))
+                        .size(23.0),
+                );
+                ui.add_space(20.0);
+                ui.label(egui::RichText::new("翻译队列").strong());
+                ui.separator();
+                ui.label(format!("{} 个历史任务", self.jobs.len()));
+                ui.add_space(18.0);
+                ui.label(egui::RichText::new("翻译设置").strong());
+                ui.add_space(6.0);
+                ui.label("输出语言");
+                egui::ComboBox::from_id_salt("language")
+                    .selected_text(language_label(
+                        self.metadata.as_ref(),
+                        &self.target_language,
+                    ))
+                    .show_ui(ui, |ui| {
+                        if let Some(meta) = &self.metadata {
+                            for language in &meta.languages {
+                                ui.selectable_value(
+                                    &mut self.target_language,
+                                    language.language_code.clone(),
+                                    &language.language_name,
+                                );
+                            }
+                        }
+                    });
+                ui.add_space(8.0);
+                ui.label("翻译引擎");
+                egui::ComboBox::from_id_salt("model")
+                    .selected_text(&self.model)
+                    .show_ui(ui, |ui| {
+                        if let Some(meta) = &self.metadata {
+                            for model in &meta.models {
+                                ui.selectable_value(
+                                    &mut self.model,
+                                    model.engine_name.clone(),
+                                    format!("{}  ×{}", model.engine_name, model.token_cost_ratio),
+                                );
+                            }
+                        }
+                    });
+                ui.checkbox(&mut self.ocr_enabled, "启用 OCR");
+                ui.checkbox(&mut self.translate_filename, "自动翻译文件名");
+                ui.add_space(8.0);
+                ui.label("输出目录");
+                ui.horizontal(|ui| {
+                    ui.add(egui::TextEdit::singleline(&mut self.output_dir).desired_width(180.0));
+                    if ui.button("选择").clicked() {
+                        if let Some(path) = rfd::FileDialog::new().pick_folder() {
+                            self.output_dir = path.display().to_string();
+                        }
+                    }
+                });
+                ui.add_space(18.0);
+                if let Some(meta) = &self.metadata {
+                    ui.separator();
+                    ui.label(egui::RichText::new("账户余额").strong());
+                    ui.label(format!("总额度  {} 字", meta.account.total_words));
+                    ui.label(format!("会员额度  {} 字", meta.account.vip_words));
+                    ui.label(format!("套餐额度  {} 字", meta.account.bag_words));
+                    if ui.small_button("刷新账户信息").clicked() {
+                        self.refresh_metadata();
+                    }
+                }
+            });
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.add_space(12.0);
+            ui.horizontal(|ui| {
+                if ui
+                    .button(
+                        egui::RichText::new("＋ 添加文件")
+                            .size(18.0)
+                            .color(egui::Color32::BLACK),
+                    )
+                    .clicked()
+                {
+                    if let Some(paths) = rfd::FileDialog::new().pick_files() {
+                        for path in paths {
+                            if !self.files.contains(&path) {
+                                self.files.push(path);
+                            }
+                        }
+                    }
+                }
+                if ui.button("移除全部").clicked() {
+                    self.files.clear();
+                }
+                ui.separator();
+                ui.label(&self.notice);
+            });
+            ui.add_space(12.0);
+            egui::Frame::group(ui.style())
+                .fill(egui::Color32::from_rgb(31, 35, 41))
+                .show(ui, |ui| {
+                    ui.heading(format!("待提交文件 ({})", self.files.len()));
+                    if self.files.is_empty() {
+                        ui.add_space(28.0);
+                        ui.centered_and_justified(|ui| {
+                            ui.label("将文件拖到此处，或点击“添加文件”进行多选")
+                        });
+                        ui.add_space(28.0);
+                    } else {
+                        egui::ScrollArea::vertical()
+                            .max_height(150.0)
+                            .show(ui, |ui| {
+                                for path in &self.files {
+                                    ui.horizontal(|ui| {
+                                        ui.label("▧");
+                                        ui.label(
+                                            path.file_name()
+                                                .and_then(|x| x.to_str())
+                                                .unwrap_or("document"),
+                                        );
+                                        ui.with_layout(
+                                            egui::Layout::right_to_left(egui::Align::Center),
+                                            |ui| {
+                                                ui.label(path.display().to_string());
+                                            },
+                                        );
+                                    });
+                                }
+                            });
+                    }
+                });
+            ui.add_space(14.0);
+            ui.heading("翻译队列");
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                egui::Grid::new("jobs")
+                    .striped(true)
+                    .min_col_width(95.0)
+                    .show(ui, |ui| {
+                        ui.strong("文件名");
+                        ui.strong("输出语言");
+                        ui.strong("状态");
+                        ui.strong("进度");
+                        ui.end_row();
+                        for job in &self.jobs {
+                            ui.label(&job.original_name);
+                            ui.label(&job.target_language);
+                            ui.label(status_label(&job.status));
+                            ui.add(
+                                egui::ProgressBar::new(progress_value(&job.progress))
+                                    .text(&job.progress),
+                            );
+                            ui.end_row();
+                        }
+                    });
+            });
+            ui.add_space(12.0);
+            ui.horizontal(|ui| {
+                ui.label(format!("共 {} 个任务", self.jobs.len()));
+                ui.separator();
+                ui.label(format!(
+                    "已完成 {} 个",
+                    self.jobs.iter().filter(|j| j.status == "completed").count()
+                ));
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if ui
+                        .add_sized(
+                            [180.0, 44.0],
+                            egui::Button::new(egui::RichText::new("▶  开始翻译").size(20.0)),
+                        )
+                        .clicked()
+                    {
+                        self.enqueue();
+                    }
+                });
+            });
+        });
+    }
+}
+
+fn language_label(metadata: Option<&Metadata>, code: &str) -> String {
+    metadata
+        .and_then(|m| m.languages.iter().find(|x| x.language_code == code))
+        .map(|x| x.language_name.clone())
+        .unwrap_or_else(|| "选择语言".into())
+}
+fn status_label(status: &str) -> &str {
+    match status {
+        "queued" => "排队中",
+        "uploading" => "上传中",
+        "translating" => "翻译中",
+        "downloading" => "下载中",
+        "completed" => "已完成",
+        "failed" => "失败",
+        "cancelled" => "已取消",
+        _ => status,
+    }
+}
+fn progress_value(progress: &str) -> f32 {
+    progress
+        .trim_end_matches('%')
+        .parse::<f32>()
+        .unwrap_or(0.0)
+        .clamp(0.0, 100.0)
+        / 100.0
 }
 
 fn migrate(db: &Connection) -> Result<()> {
@@ -271,6 +594,44 @@ async fn create_jobs(
     Ok((StatusCode::CREATED, Json(created)))
 }
 
+async fn enqueue_paths(
+    state: &AppState,
+    paths: Vec<PathBuf>,
+    output_dir: &str,
+    target_language: &str,
+    model: &str,
+    ocr_enabled: bool,
+    translate_filename: bool,
+) -> Result<Vec<Job>> {
+    if paths.is_empty() {
+        anyhow::bail!("请先添加文件。");
+    }
+    if !output_dir_writable(Path::new(output_dir)) {
+        anyhow::bail!("请选择可写入的输出文件夹。");
+    }
+    let mut input = Vec::with_capacity(paths.len());
+    for path in paths {
+        let name = path
+            .file_name()
+            .and_then(|x| x.to_str())
+            .context("无效的文件名")?
+            .to_owned();
+        input.push((name, fs::read(path)?));
+    }
+    let db = state.db.lock().await;
+    let mut created = Vec::with_capacity(input.len());
+    for (name, bytes) in input {
+        let id = Uuid::new_v4().to_string();
+        let inbox = state.data_dir.join("inbox").join(&id);
+        fs::create_dir_all(&inbox)?;
+        let source_path = inbox.join(&name);
+        fs::write(&source_path, bytes)?;
+        db.execute("INSERT INTO jobs (id, original_name, source_path, output_dir, target_language, model, ocr_enabled, translate_filename, status, progress, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'queued', '-', ?9)", params![id, name, source_path.display().to_string(), output_dir, target_language, model, ocr_enabled as i32, translate_filename as i32, now()])?;
+        created.push(job_by_id(&db, &id)?);
+    }
+    Ok(created)
+}
+
 async fn retry_job(
     State(state): State<AppState>,
     AxumPath(id): AxumPath<String>,
@@ -326,21 +687,21 @@ async fn select_output_dir() -> ApiResult<Json<OutputDir>> {
         })
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct ModelInfo {
     #[serde(rename = "engineName")]
     engine_name: String,
     #[serde(rename = "tokenCostRatio")]
     token_cost_ratio: String,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct LanguageInfo {
     #[serde(rename = "languageName")]
     language_name: String,
     #[serde(rename = "languageCode")]
     language_code: String,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct AccountInfo {
     #[serde(rename = "bagWords")]
     bag_words: i64,
@@ -350,7 +711,7 @@ struct AccountInfo {
     vip_words: i64,
     status: i32,
 }
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 struct Metadata {
     models: Vec<ModelInfo>,
     languages: Vec<LanguageInfo>,
@@ -358,31 +719,25 @@ struct Metadata {
 }
 
 async fn get_metadata(State(state): State<AppState>) -> ApiResult<Json<Metadata>> {
-    let key = env::var("DOCLINGO_API_KEY").map_err(|_| {
-        error(
-            "API_KEY_NOT_CONFIGURED",
-            StatusCode::SERVICE_UNAVAILABLE,
-            "Set DOCLINGO_API_KEY before loading Doclingo metadata.",
-        )
-    })?;
-    let models = external_list::<ModelInfo>(&state.client, &key, "models")
-        .await
-        .map_err(internal)?;
+    fetch_metadata(&state).await.map(Json).map_err(internal)
+}
+
+async fn fetch_metadata(state: &AppState) -> Result<Metadata> {
+    let key = env::var("DOCLINGO_API_KEY")
+        .map_err(|_| anyhow::anyhow!("请在 .env 中设置 DOCLINGO_API_KEY。"))?;
+    let models = external_list::<ModelInfo>(&state.client, &key, "models").await?;
     let languages = external_list::<LanguageInfo>(
         &state.client,
         &key,
         "gettranslatorlanguagelist?internationalCode=zh-CN",
     )
-    .await
-    .map_err(internal)?;
-    let account = external_data::<AccountInfo>(&state.client, &key, "getapiuserinfo")
-        .await
-        .map_err(internal)?;
-    Ok(Json(Metadata {
+    .await?;
+    let account = external_data::<AccountInfo>(&state.client, &key, "getapiuserinfo").await?;
+    Ok(Metadata {
         models,
         languages,
         account,
-    }))
+    })
 }
 
 async fn worker(state: AppState) {

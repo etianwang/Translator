@@ -2,9 +2,9 @@
 
 ## 1. Scaffold
 
-- Create Rust workspace with Axum server and React app.
+- Create Rust workspace with Axum service and egui native app.
 - Add application-data path discovery and local launch command.
-- Done when the React page loads from Axum in development.
+- Done when the native window opens in development.
 
 ## 2. Storage and settings
 
@@ -24,7 +24,7 @@
 - Validate write access to output directory before enqueueing.
 - Done when API contract tests pass.
 
-## 5. React UI
+## 5. Native egui UI
 
 - Implement approved side-queue layout.
 - Add drag/drop, multi-file selection, output-folder picker, target language, options, start button, and queue actions.

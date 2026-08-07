@@ -40,7 +40,7 @@ Returns `201` and created job records in `queued` state.
 - `languages`: display name and code from `/gettranslatorlanguagelist?internationalCode=zh-CN`.
 - `account`: live `total_words`, `vip_words`, `bag_words`, and account status from `/getapiuserinfo`.
 
-The frontend refreshes metadata every 30 seconds and sends the selected `model` with each job submission.
+The native UI refreshes metadata every 30 seconds and sends the selected `model` with each job submission.
 
 ## Error shape
 

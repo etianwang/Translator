@@ -8,7 +8,7 @@
 - API validation: no file, inaccessible output folder, invalid language, unknown job.
 - Doclingo client uses a local mock server; tests must never call the live service.
 
-## Required React tests
+## Required native UI checks
 
 - Drag/drop and multi-file picker add files to the selected list.
 - Remove action removes exactly one file.

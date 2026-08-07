@@ -2,9 +2,9 @@
 
 ## Architecture
 
-`React UI → Axum HTTP API → SQLite repository + one queue worker → Doclingo API`.
+`egui native UI → SQLite repository + one queue worker → Doclingo API`.
 
-The frontend never receives the Doclingo key. Axum owns uploads, copies each source into the application data directory, and the worker is the only component that calls Doclingo.
+The native UI never receives the Doclingo key. Axum remains available for local integration; the worker is the only component that calls Doclingo.
 
 ## Job record
 

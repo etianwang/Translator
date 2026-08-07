@@ -1,8 +1,6 @@
 /target/
 /app-data/
-/frontend/node_modules/
-/frontend/dist/
-/frontend/*.tsbuildinfo
+/frontend/
 /.env
 /release/
 /gen/

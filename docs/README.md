@@ -1,6 +1,6 @@
 # Translator harness
 
-This folder is the implementation contract for the React + Axum rewrite.
+This folder is the implementation contract for the native egui + Axum rewrite.
 
 - [PRD](PRD.md): product scope and acceptance criteria
 - [SPEC](SPEC.md): architecture, state machine, storage, API
@@ -14,9 +14,8 @@ This folder is the implementation contract for the React + Axum rewrite.
 ```powershell
 $env:DOCLINGO_API_KEY = "your-key"
 cargo run
-cd frontend; npm run dev
 ```
 
-The React dev server proxies `/api` to Axum at `http://127.0.0.1:3000`.
+This launches the native Windows window. Axum remains available locally for integration endpoints.
 
 For the packaged EXE, copy `.env.example` to `.env` in the same folder as the EXE and set `DOCLINGO_API_KEY` there. `.env` is local-only and must not be committed.
