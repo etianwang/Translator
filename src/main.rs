@@ -223,9 +223,10 @@ slint::slint! {
 
 fn run_slint(state: AppState, runtime: Arc<tokio::runtime::Runtime>) -> Result<()> {
     use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
-    use std::{rc::Rc, sync::Mutex as StdMutex};
+    use std::{collections::HashMap, rc::Rc, sync::Mutex as StdMutex};
     let ui = AppWindow::new().map_err(|e| anyhow::anyhow!("cannot create native window: {e}"))?;
     let files = Arc::new(StdMutex::new(Vec::<PathBuf>::new()));
+    let language_codes = Arc::new(StdMutex::new(HashMap::<String, String>::new()));
     let refresh = |ui: &AppWindow, state: &AppState, runtime: &Arc<tokio::runtime::Runtime>| {
         let jobs = runtime
             .block_on(async {
@@ -256,12 +257,24 @@ fn run_slint(state: AppState, runtime: Arc<tokio::runtime::Runtime>) -> Result<(
         );
     };
     if let Ok(meta) = runtime.block_on(fetch_metadata(&state)) {
-        ui.set_languages(ModelRc::new(Rc::new(VecModel::from(
-            meta.languages
-                .into_iter()
-                .map(|x| SharedString::from(x.language_code))
-                .collect::<Vec<_>>(),
-        ))));
+        let languages = meta
+            .languages
+            .iter()
+            .map(|x| {
+                let name = chinese_language_name(&x.language_code, &x.language_name);
+                language_codes
+                    .lock()
+                    .unwrap()
+                    .insert(name.clone(), x.language_code.clone());
+                SharedString::from(name)
+            })
+            .collect::<Vec<_>>();
+        if ui.get_target_language().is_empty() {
+            if let Some(language) = languages.first() {
+                ui.set_target_language(language.clone());
+            }
+        }
+        ui.set_languages(ModelRc::new(Rc::new(VecModel::from(languages))));
         ui.set_models(ModelRc::new(Rc::new(VecModel::from(
             meta.models
                 .into_iter()
@@ -293,16 +306,24 @@ fn run_slint(state: AppState, runtime: Arc<tokio::runtime::Runtime>) -> Result<(
     let weak = ui.as_weak();
     let metadata_state = state.clone();
     let metadata_runtime = runtime.clone();
+    let metadata_languages = language_codes.clone();
     ui.on_refresh_metadata(move || {
         if let Some(ui) = weak.upgrade() {
             match metadata_runtime.block_on(fetch_metadata(&metadata_state)) {
                 Ok(meta) => {
-                    ui.set_languages(ModelRc::new(Rc::new(VecModel::from(
-                        meta.languages
-                            .into_iter()
-                            .map(|x| SharedString::from(x.language_code))
-                            .collect::<Vec<_>>(),
-                    ))));
+                    let languages = meta
+                        .languages
+                        .iter()
+                        .map(|x| {
+                            let name = chinese_language_name(&x.language_code, &x.language_name);
+                            metadata_languages
+                                .lock()
+                                .unwrap()
+                                .insert(name.clone(), x.language_code.clone());
+                            SharedString::from(name)
+                        })
+                        .collect::<Vec<_>>();
+                    ui.set_languages(ModelRc::new(Rc::new(VecModel::from(languages))));
                     ui.set_models(ModelRc::new(Rc::new(VecModel::from(
                         meta.models
                             .into_iter()
@@ -319,6 +340,7 @@ fn run_slint(state: AppState, runtime: Arc<tokio::runtime::Runtime>) -> Result<(
     let start_state = state.clone();
     let start_runtime = runtime.clone();
     let start_files = files.clone();
+    let start_languages = language_codes.clone();
     ui.on_start_translation(move || {
         if let Some(ui) = weak.upgrade() {
             let paths = std::mem::take(&mut *start_files.lock().unwrap());
@@ -326,7 +348,12 @@ fn run_slint(state: AppState, runtime: Arc<tokio::runtime::Runtime>) -> Result<(
                 &start_state,
                 paths,
                 &ui.get_output_dir(),
-                &ui.get_target_language(),
+                &start_languages
+                    .lock()
+                    .unwrap()
+                    .get(ui.get_target_language().as_str())
+                    .cloned()
+                    .unwrap_or_else(|| ui.get_target_language().to_string()),
                 &ui.get_model(),
                 ui.get_ocr_enabled(),
                 ui.get_translate_filename(),
@@ -354,6 +381,25 @@ fn run_slint(state: AppState, runtime: Arc<tokio::runtime::Runtime>) -> Result<(
     );
     ui.run()
         .map_err(|e| anyhow::anyhow!("native application stopped: {e}"))
+}
+
+fn chinese_language_name(code: &str, fallback: &str) -> String {
+    match code {
+        "zh" | "zh-CN" => "简体中文",
+        "zh-TW" => "繁体中文",
+        "en" | "en-US" => "英语",
+        "fr" => "法语",
+        "de" => "德语",
+        "ja" => "日语",
+        "ko" => "韩语",
+        "es" => "西班牙语",
+        "pt" | "pt-BR" => "葡萄牙语",
+        "it" => "意大利语",
+        "ru" => "俄语",
+        "ar" => "阿拉伯语",
+        _ => fallback,
+    }
+    .to_owned()
 }
 
 #[cfg(any())]
