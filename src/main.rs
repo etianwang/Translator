@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use std::{
     env, fs,
     path::{Path, PathBuf},
@@ -9,11 +11,13 @@ use anyhow::{Context, Result};
 use axum::{
     extract::{Multipart, Path as AxumPath, State},
     http::StatusCode,
+    response::{IntoResponse, Response},
     routing::{delete, get, post},
     Json, Router,
 };
 use reqwest::multipart::{Form, Part};
 use rusqlite::{params, Connection, OptionalExtension};
+use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
@@ -21,6 +25,10 @@ use uuid::Uuid;
 
 const DOCLINGO_TRANSLATE_URL: &str = "https://api.doclingo.cn/api/core/external/translate";
 const DOCLINGO_API_URL: &str = "https://api.doclingo.cn/api/core/external";
+
+#[derive(RustEmbed)]
+#[folder = "frontend/dist/"]
+struct Frontend;
 
 #[derive(Clone)]
 struct AppState {
@@ -81,6 +89,7 @@ struct RetryRequest {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    dotenvy::dotenv().ok();
     let data_dir = env::current_dir()?.join("app-data");
     fs::create_dir_all(data_dir.join("inbox"))?;
     let db = Connection::open(data_dir.join("translator.db"))?;
@@ -97,12 +106,33 @@ async fn main() -> Result<()> {
         .route("/api/jobs/{id}", delete(cancel_job))
         .route("/api/select-output-dir", post(select_output_dir))
         .route("/api/metadata", get(get_metadata))
+        .fallback(get(serve_frontend))
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http())
         .with_state(state);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
     println!("Translator API listening on http://127.0.0.1:3000");
+    let _ = std::process::Command::new("cmd")
+        .args(["/C", "start", "", "http://127.0.0.1:3000"])
+        .spawn();
     axum::serve(listener, app).await.context("server stopped")
+}
+
+async fn serve_frontend(uri: axum::http::Uri) -> Response {
+    let path = uri.path().trim_start_matches('/');
+    let asset = Frontend::get(if path.is_empty() { "index.html" } else { path })
+        .or_else(|| Frontend::get("index.html"));
+    match asset {
+        Some(asset) => (
+            [(
+                "content-type",
+                mime_guess::from_path(path).first_or_octet_stream().as_ref(),
+            )],
+            asset.data,
+        )
+            .into_response(),
+        None => StatusCode::NOT_FOUND.into_response(),
+    }
 }
 
 fn migrate(db: &Connection) -> Result<()> {

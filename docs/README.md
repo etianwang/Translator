@@ -18,3 +18,5 @@ cd frontend; npm run dev
 ```
 
 The React dev server proxies `/api` to Axum at `http://127.0.0.1:3000`.
+
+For the packaged EXE, copy `.env.example` to `.env` in the same folder as the EXE and set `DOCLINGO_API_KEY` there. `.env` is local-only and must not be committed.
