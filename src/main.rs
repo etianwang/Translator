@@ -176,6 +176,8 @@ impl TranslatorApp {
         style.visuals.widgets.noninteractive.bg_fill = egui::Color32::from_rgb(30, 34, 41);
         style.visuals.widgets.inactive.bg_fill = egui::Color32::from_rgb(36, 40, 47);
         style.visuals.selection.bg_fill = egui::Color32::from_rgb(255, 176, 24);
+        style.spacing.item_spacing = egui::vec2(10.0, 10.0);
+        style.spacing.button_padding = egui::vec2(12.0, 8.0);
         cc.egui_ctx.set_style(style);
         let mut app = Self {
             state,
@@ -304,7 +306,7 @@ impl eframe::App for TranslatorApp {
         }
         self.refresh_jobs();
         egui::TopBottomPanel::top("app_header")
-            .exact_height(54.0)
+            .exact_height(64.0)
             .frame(egui::Frame::default().fill(egui::Color32::from_rgb(15, 17, 21)))
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
@@ -325,32 +327,49 @@ impl eframe::App for TranslatorApp {
                 });
             });
         egui::SidePanel::left("sidebar")
-            .min_width(285.0)
+            .min_width(300.0)
             .frame(egui::Frame::default().fill(egui::Color32::from_rgb(20, 23, 28)))
             .show(ctx, |ui| {
-                ui.add_space(14.0);
+                ui.add_space(18.0);
                 ui.heading(
                     egui::RichText::new("文档翻译")
                         .color(egui::Color32::from_rgb(255, 180, 24))
                         .size(23.0),
                 );
-                ui.add_space(20.0);
-                ui.label(
-                    egui::RichText::new(format!("翻译队列  ({})", self.jobs.len()))
-                        .strong()
-                        .color(egui::Color32::from_rgb(255, 183, 28)),
+                ui.add_space(22.0);
+                let nav_width = ui.available_width();
+                ui.add_sized(
+                    [nav_width, 38.0],
+                    egui::Button::new(
+                        egui::RichText::new(format!("翻译队列     {}", self.jobs.len()))
+                            .strong()
+                            .color(egui::Color32::from_rgb(255, 183, 28)),
+                    )
+                    .fill(egui::Color32::from_rgb(55, 47, 32)),
                 );
-                ui.add_space(8.0);
-                ui.label("翻译记录");
-                ui.add_space(8.0);
-                ui.label("术语库");
-                ui.add_space(8.0);
-                ui.label("设置");
+                ui.add_sized(
+                    [nav_width, 34.0],
+                    egui::Button::new("翻译记录").fill(egui::Color32::TRANSPARENT),
+                );
+                ui.add_sized(
+                    [nav_width, 34.0],
+                    egui::Button::new("术语库").fill(egui::Color32::TRANSPARENT),
+                );
+                ui.add_sized(
+                    [nav_width, 34.0],
+                    egui::Button::new("设置").fill(egui::Color32::TRANSPARENT),
+                );
                 ui.separator();
                 ui.label(egui::RichText::new(format!("{} 个历史任务", self.jobs.len())).weak());
                 ui.add_space(18.0);
-                egui::Frame::group(ui.style())
+                egui::Frame::new()
                     .fill(egui::Color32::from_rgb(29, 33, 39))
+                    .inner_margin(egui::Margin::same(14))
+                    .corner_radius(10.0)
+                    .stroke(egui::Stroke::new(
+                        1.0_f32,
+                        egui::Color32::from_rgb(65, 71, 80),
+                    ))
                     .show(ui, |ui| {
                         ui.label(egui::RichText::new("翻译设置").strong());
                         ui.add_space(6.0);
@@ -450,15 +469,25 @@ impl eframe::App for TranslatorApp {
                     ui.label(&self.notice);
                 });
                 ui.add_space(12.0);
-                egui::Frame::group(ui.style())
+                egui::Frame::new()
                     .fill(egui::Color32::from_rgb(31, 35, 41))
+                    .inner_margin(egui::Margin::same(18))
+                    .corner_radius(12.0)
+                    .stroke(egui::Stroke::new(
+                        1.0_f32,
+                        egui::Color32::from_rgb(67, 73, 82),
+                    ))
                     .show(ui, |ui| {
                         ui.set_min_width(content_width - 18.0);
                         ui.heading(format!("待提交文件 ({})", self.files.len()));
                         if self.files.is_empty() {
-                            ui.add_space(28.0);
-                            ui.label("将文件拖到此处，或点击“添加文件”进行多选");
-                            ui.add_space(28.0);
+                            ui.add_space(16.0);
+                            ui.vertical_centered(|ui| {
+                                ui.label(egui::RichText::new("拖入文档").size(22.0).strong());
+                                ui.label("支持 Doclingo 可翻译的全部文档格式");
+                                ui.label("或点击上方“添加文件”进行多选");
+                            });
+                            ui.add_space(16.0);
                         } else {
                             egui::ScrollArea::vertical()
                                 .max_height(150.0)
@@ -483,8 +512,14 @@ impl eframe::App for TranslatorApp {
                         }
                     });
                 ui.add_space(14.0);
-                egui::Frame::group(ui.style())
+                egui::Frame::new()
                     .fill(egui::Color32::from_rgb(29, 33, 39))
+                    .inner_margin(egui::Margin::same(16))
+                    .corner_radius(12.0)
+                    .stroke(egui::Stroke::new(
+                        1.0_f32,
+                        egui::Color32::from_rgb(67, 73, 82),
+                    ))
                     .show(ui, |ui| {
                         ui.set_min_width(content_width - 18.0);
                         ui.heading("翻译队列");
@@ -517,8 +552,14 @@ impl eframe::App for TranslatorApp {
                             });
                     });
                 ui.add_space(12.0);
-                egui::Frame::group(ui.style())
+                egui::Frame::new()
                     .fill(egui::Color32::from_rgb(31, 35, 41))
+                    .inner_margin(egui::Margin::same(12))
+                    .corner_radius(12.0)
+                    .stroke(egui::Stroke::new(
+                        1.0_f32,
+                        egui::Color32::from_rgb(67, 73, 82),
+                    ))
                     .show(ui, |ui| {
                         ui.set_min_width(content_width - 18.0);
                         ui.horizontal(|ui| {
