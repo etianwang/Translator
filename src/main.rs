@@ -152,8 +152,28 @@ impl TranslatorApp {
         state: AppState,
         runtime: Arc<tokio::runtime::Runtime>,
     ) -> Self {
+        let mut fonts = egui::FontDefinitions::default();
+        if let Ok(bytes) = fs::read(r"C:\Windows\Fonts\msyh.ttc") {
+            fonts.font_data.insert(
+                "microsoft_yahei".into(),
+                Arc::new(egui::FontData::from_owned(bytes)),
+            );
+            for family in [egui::FontFamily::Proportional, egui::FontFamily::Monospace] {
+                fonts
+                    .families
+                    .entry(family)
+                    .or_default()
+                    .insert(0, "microsoft_yahei".into());
+            }
+        }
+        cc.egui_ctx.set_fonts(fonts);
         let mut style = (*cc.egui_ctx.style()).clone();
         style.visuals = egui::Visuals::dark();
+        style.visuals.panel_fill = egui::Color32::from_rgb(20, 23, 28);
+        style.visuals.window_fill = egui::Color32::from_rgb(30, 34, 41);
+        style.visuals.faint_bg_color = egui::Color32::from_rgb(35, 39, 47);
+        style.visuals.extreme_bg_color = egui::Color32::from_rgb(16, 19, 24);
+        style.visuals.widgets.noninteractive.bg_fill = egui::Color32::from_rgb(30, 34, 41);
         style.visuals.widgets.inactive.bg_fill = egui::Color32::from_rgb(36, 40, 47);
         style.visuals.selection.bg_fill = egui::Color32::from_rgb(255, 176, 24);
         cc.egui_ctx.set_style(style);
@@ -237,6 +257,14 @@ impl TranslatorApp {
 
 impl eframe::App for TranslatorApp {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
+        let mut visuals = egui::Visuals::dark();
+        visuals.panel_fill = egui::Color32::from_rgb(20, 23, 28);
+        visuals.window_fill = egui::Color32::from_rgb(30, 34, 41);
+        visuals.faint_bg_color = egui::Color32::from_rgb(35, 39, 47);
+        visuals.extreme_bg_color = egui::Color32::from_rgb(16, 19, 24);
+        visuals.widgets.noninteractive.bg_fill = egui::Color32::from_rgb(30, 34, 41);
+        visuals.widgets.inactive.bg_fill = egui::Color32::from_rgb(36, 40, 47);
+        ctx.set_visuals(visuals);
         ctx.request_repaint_after(Duration::from_millis(500));
         if self.last_metadata_refresh.elapsed() >= Duration::from_secs(30) {
             self.refresh_metadata();
@@ -275,182 +303,253 @@ impl eframe::App for TranslatorApp {
             }
         }
         self.refresh_jobs();
+        egui::TopBottomPanel::top("app_header")
+            .exact_height(54.0)
+            .frame(egui::Frame::default().fill(egui::Color32::from_rgb(15, 17, 21)))
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.add_space(12.0);
+                    ui.heading(
+                        egui::RichText::new("文档翻译")
+                            .size(22.0)
+                            .color(egui::Color32::from_rgb(255, 183, 28)),
+                    );
+                    ui.separator();
+                    ui.label(egui::RichText::new("Doclingo · 本地翻译队列").weak());
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        ui.label(
+                            egui::RichText::new("● 就绪")
+                                .color(egui::Color32::from_rgb(27, 203, 116)),
+                        );
+                    });
+                });
+            });
         egui::SidePanel::left("sidebar")
             .min_width(285.0)
+            .frame(egui::Frame::default().fill(egui::Color32::from_rgb(20, 23, 28)))
             .show(ctx, |ui| {
                 ui.add_space(14.0);
                 ui.heading(
-                    egui::RichText::new("▣  文档翻译")
+                    egui::RichText::new("文档翻译")
                         .color(egui::Color32::from_rgb(255, 180, 24))
                         .size(23.0),
                 );
                 ui.add_space(20.0);
-                ui.label(egui::RichText::new("翻译队列").strong());
-                ui.separator();
-                ui.label(format!("{} 个历史任务", self.jobs.len()));
-                ui.add_space(18.0);
-                ui.label(egui::RichText::new("翻译设置").strong());
-                ui.add_space(6.0);
-                ui.label("输出语言");
-                egui::ComboBox::from_id_salt("language")
-                    .selected_text(language_label(
-                        self.metadata.as_ref(),
-                        &self.target_language,
-                    ))
-                    .show_ui(ui, |ui| {
-                        if let Some(meta) = &self.metadata {
-                            for language in &meta.languages {
-                                ui.selectable_value(
-                                    &mut self.target_language,
-                                    language.language_code.clone(),
-                                    &language.language_name,
-                                );
-                            }
-                        }
-                    });
+                ui.label(
+                    egui::RichText::new(format!("翻译队列  ({})", self.jobs.len()))
+                        .strong()
+                        .color(egui::Color32::from_rgb(255, 183, 28)),
+                );
                 ui.add_space(8.0);
-                ui.label("翻译引擎");
-                egui::ComboBox::from_id_salt("model")
-                    .selected_text(&self.model)
-                    .show_ui(ui, |ui| {
-                        if let Some(meta) = &self.metadata {
-                            for model in &meta.models {
-                                ui.selectable_value(
-                                    &mut self.model,
-                                    model.engine_name.clone(),
-                                    format!("{}  ×{}", model.engine_name, model.token_cost_ratio),
-                                );
-                            }
-                        }
-                    });
-                ui.checkbox(&mut self.ocr_enabled, "启用 OCR");
-                ui.checkbox(&mut self.translate_filename, "自动翻译文件名");
+                ui.label("翻译记录");
                 ui.add_space(8.0);
-                ui.label("输出目录");
-                ui.horizontal(|ui| {
-                    ui.add(egui::TextEdit::singleline(&mut self.output_dir).desired_width(180.0));
-                    if ui.button("选择").clicked() {
-                        if let Some(path) = rfd::FileDialog::new().pick_folder() {
-                            self.output_dir = path.display().to_string();
-                        }
-                    }
-                });
-                ui.add_space(18.0);
-                if let Some(meta) = &self.metadata {
-                    ui.separator();
-                    ui.label(egui::RichText::new("账户余额").strong());
-                    ui.label(format!("总额度  {} 字", meta.account.total_words));
-                    ui.label(format!("会员额度  {} 字", meta.account.vip_words));
-                    ui.label(format!("套餐额度  {} 字", meta.account.bag_words));
-                    if ui.small_button("刷新账户信息").clicked() {
-                        self.refresh_metadata();
-                    }
-                }
-            });
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.add_space(12.0);
-            ui.horizontal(|ui| {
-                if ui
-                    .button(
-                        egui::RichText::new("＋ 添加文件")
-                            .size(18.0)
-                            .color(egui::Color32::BLACK),
-                    )
-                    .clicked()
-                {
-                    if let Some(paths) = rfd::FileDialog::new().pick_files() {
-                        for path in paths {
-                            if !self.files.contains(&path) {
-                                self.files.push(path);
-                            }
-                        }
-                    }
-                }
-                if ui.button("移除全部").clicked() {
-                    self.files.clear();
-                }
+                ui.label("术语库");
+                ui.add_space(8.0);
+                ui.label("设置");
                 ui.separator();
-                ui.label(&self.notice);
-            });
-            ui.add_space(12.0);
-            egui::Frame::group(ui.style())
-                .fill(egui::Color32::from_rgb(31, 35, 41))
-                .show(ui, |ui| {
-                    ui.heading(format!("待提交文件 ({})", self.files.len()));
-                    if self.files.is_empty() {
-                        ui.add_space(28.0);
-                        ui.centered_and_justified(|ui| {
-                            ui.label("将文件拖到此处，或点击“添加文件”进行多选")
-                        });
-                        ui.add_space(28.0);
-                    } else {
-                        egui::ScrollArea::vertical()
-                            .max_height(150.0)
-                            .show(ui, |ui| {
-                                for path in &self.files {
-                                    ui.horizontal(|ui| {
-                                        ui.label("▧");
-                                        ui.label(
-                                            path.file_name()
-                                                .and_then(|x| x.to_str())
-                                                .unwrap_or("document"),
+                ui.label(egui::RichText::new(format!("{} 个历史任务", self.jobs.len())).weak());
+                ui.add_space(18.0);
+                egui::Frame::group(ui.style())
+                    .fill(egui::Color32::from_rgb(29, 33, 39))
+                    .show(ui, |ui| {
+                        ui.label(egui::RichText::new("翻译设置").strong());
+                        ui.add_space(6.0);
+                        ui.label("输出语言");
+                        egui::ComboBox::from_id_salt("language")
+                            .selected_text(language_label(
+                                self.metadata.as_ref(),
+                                &self.target_language,
+                            ))
+                            .show_ui(ui, |ui| {
+                                if let Some(meta) = &self.metadata {
+                                    for language in &meta.languages {
+                                        ui.selectable_value(
+                                            &mut self.target_language,
+                                            language.language_code.clone(),
+                                            &language.language_name,
                                         );
-                                        ui.with_layout(
-                                            egui::Layout::right_to_left(egui::Align::Center),
-                                            |ui| {
-                                                ui.label(path.display().to_string());
-                                            },
-                                        );
-                                    });
+                                    }
                                 }
                             });
-                    }
-                });
-            ui.add_space(14.0);
-            ui.heading("翻译队列");
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                egui::Grid::new("jobs")
-                    .striped(true)
-                    .min_col_width(95.0)
-                    .show(ui, |ui| {
-                        ui.strong("文件名");
-                        ui.strong("输出语言");
-                        ui.strong("状态");
-                        ui.strong("进度");
-                        ui.end_row();
-                        for job in &self.jobs {
-                            ui.label(&job.original_name);
-                            ui.label(&job.target_language);
-                            ui.label(status_label(&job.status));
+                        ui.add_space(8.0);
+                        ui.label("翻译引擎");
+                        egui::ComboBox::from_id_salt("model")
+                            .selected_text(&self.model)
+                            .show_ui(ui, |ui| {
+                                if let Some(meta) = &self.metadata {
+                                    for model in &meta.models {
+                                        ui.selectable_value(
+                                            &mut self.model,
+                                            model.engine_name.clone(),
+                                            format!(
+                                                "{}  ×{}",
+                                                model.engine_name, model.token_cost_ratio
+                                            ),
+                                        );
+                                    }
+                                }
+                            });
+                        ui.checkbox(&mut self.ocr_enabled, "启用 OCR");
+                        ui.checkbox(&mut self.translate_filename, "自动翻译文件名");
+                        ui.add_space(8.0);
+                        ui.label("输出目录");
+                        ui.horizontal(|ui| {
                             ui.add(
-                                egui::ProgressBar::new(progress_value(&job.progress))
-                                    .text(&job.progress),
+                                egui::TextEdit::singleline(&mut self.output_dir)
+                                    .desired_width(180.0),
                             );
-                            ui.end_row();
+                            if ui.button("选择").clicked() {
+                                if let Some(path) = rfd::FileDialog::new().pick_folder() {
+                                    self.output_dir = path.display().to_string();
+                                }
+                            }
+                        });
+                        ui.add_space(18.0);
+                        if let Some(meta) = &self.metadata {
+                            ui.separator();
+                            ui.label(egui::RichText::new("账户余额").strong());
+                            ui.label(format!("总额度  {} 字", meta.account.total_words));
+                            ui.label(format!("会员额度  {} 字", meta.account.vip_words));
+                            ui.label(format!("套餐额度  {} 字", meta.account.bag_words));
+                            if ui.small_button("刷新账户信息").clicked() {
+                                self.refresh_metadata();
+                            }
                         }
                     });
             });
-            ui.add_space(12.0);
-            ui.horizontal(|ui| {
-                ui.label(format!("共 {} 个任务", self.jobs.len()));
-                ui.separator();
-                ui.label(format!(
-                    "已完成 {} 个",
-                    self.jobs.iter().filter(|j| j.status == "completed").count()
-                ));
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+        egui::CentralPanel::default()
+            .frame(egui::Frame::default().fill(egui::Color32::from_rgb(24, 27, 33)))
+            .show(ctx, |ui| {
+                ui.set_min_width(ui.available_width());
+                ui.add_space(12.0);
+                let content_width = ui.available_width();
+                ui.horizontal(|ui| {
                     if ui
-                        .add_sized(
-                            [180.0, 44.0],
-                            egui::Button::new(egui::RichText::new("▶  开始翻译").size(20.0)),
+                        .add(
+                            egui::Button::new(
+                                egui::RichText::new("＋ 添加文件")
+                                    .size(18.0)
+                                    .color(egui::Color32::from_rgb(24, 25, 28)),
+                            )
+                            .fill(egui::Color32::from_rgb(255, 183, 28)),
                         )
                         .clicked()
                     {
-                        self.enqueue();
+                        if let Some(paths) = rfd::FileDialog::new().pick_files() {
+                            for path in paths {
+                                if !self.files.contains(&path) {
+                                    self.files.push(path);
+                                }
+                            }
+                        }
                     }
+                    if ui.button("移除全部").clicked() {
+                        self.files.clear();
+                    }
+                    ui.separator();
+                    ui.label(&self.notice);
                 });
+                ui.add_space(12.0);
+                egui::Frame::group(ui.style())
+                    .fill(egui::Color32::from_rgb(31, 35, 41))
+                    .show(ui, |ui| {
+                        ui.set_min_width(content_width - 18.0);
+                        ui.heading(format!("待提交文件 ({})", self.files.len()));
+                        if self.files.is_empty() {
+                            ui.add_space(28.0);
+                            ui.label("将文件拖到此处，或点击“添加文件”进行多选");
+                            ui.add_space(28.0);
+                        } else {
+                            egui::ScrollArea::vertical()
+                                .max_height(150.0)
+                                .show(ui, |ui| {
+                                    for path in &self.files {
+                                        ui.horizontal(|ui| {
+                                            ui.label("▧");
+                                            ui.label(
+                                                path.file_name()
+                                                    .and_then(|x| x.to_str())
+                                                    .unwrap_or("document"),
+                                            );
+                                            ui.with_layout(
+                                                egui::Layout::right_to_left(egui::Align::Center),
+                                                |ui| {
+                                                    ui.label(path.display().to_string());
+                                                },
+                                            );
+                                        });
+                                    }
+                                });
+                        }
+                    });
+                ui.add_space(14.0);
+                egui::Frame::group(ui.style())
+                    .fill(egui::Color32::from_rgb(29, 33, 39))
+                    .show(ui, |ui| {
+                        ui.set_min_width(content_width - 18.0);
+                        ui.heading("翻译队列");
+                        ui.separator();
+                        egui::ScrollArea::vertical()
+                            .max_height(310.0)
+                            .show(ui, |ui| {
+                                egui::Grid::new("jobs")
+                                    .striped(true)
+                                    .min_col_width(95.0)
+                                    .show(ui, |ui| {
+                                        ui.strong("文件名");
+                                        ui.strong("输出语言");
+                                        ui.strong("状态");
+                                        ui.strong("进度");
+                                        ui.end_row();
+                                        for job in &self.jobs {
+                                            ui.label(&job.original_name);
+                                            ui.label(&job.target_language);
+                                            ui.label(status_label(&job.status));
+                                            ui.add(
+                                                egui::ProgressBar::new(progress_value(
+                                                    &job.progress,
+                                                ))
+                                                .text(&job.progress),
+                                            );
+                                            ui.end_row();
+                                        }
+                                    });
+                            });
+                    });
+                ui.add_space(12.0);
+                egui::Frame::group(ui.style())
+                    .fill(egui::Color32::from_rgb(31, 35, 41))
+                    .show(ui, |ui| {
+                        ui.set_min_width(content_width - 18.0);
+                        ui.horizontal(|ui| {
+                            ui.label(format!("共 {} 个任务", self.jobs.len()));
+                            ui.separator();
+                            ui.label(format!(
+                                "已完成 {} 个",
+                                self.jobs.iter().filter(|j| j.status == "completed").count()
+                            ));
+                            ui.with_layout(
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    if ui
+                                        .add_sized(
+                                            [180.0, 44.0],
+                                            egui::Button::new(
+                                                egui::RichText::new("开始翻译")
+                                                    .size(20.0)
+                                                    .color(egui::Color32::WHITE),
+                                            )
+                                            .fill(egui::Color32::from_rgb(0, 166, 218)),
+                                        )
+                                        .clicked()
+                                    {
+                                        self.enqueue();
+                                    }
+                                },
+                            );
+                        });
+                    });
             });
-        });
     }
 }
 
