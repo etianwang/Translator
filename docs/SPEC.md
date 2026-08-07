@@ -2,7 +2,7 @@
 
 ## Architecture
 
-`egui native UI → SQLite repository + one queue worker → Doclingo API`.
+`Slint native UI → SQLite repository + one queue worker → Doclingo API`.
 
 The native UI never receives the Doclingo key. Axum remains available for local integration; the worker is the only component that calls Doclingo.
 

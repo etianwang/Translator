@@ -2,7 +2,7 @@
 
 ## Goal
 
-Replace the three PyQt translators with one local egui + Axum application. Users add one or more documents, choose an output folder and target language, then run a persistent Doclingo translation queue.
+Replace the three PyQt translators with one local Slint + Axum application. Users add one or more documents, choose an output folder and target language, then run a persistent Doclingo translation queue.
 
 ## Primary flow
 

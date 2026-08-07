@@ -3,8 +3,8 @@
 use std::{
     env, fs,
     path::{Path, PathBuf},
-    sync::{mpsc, Arc},
-    time::{Duration, Instant},
+    sync::Arc,
+    time::Duration,
 };
 
 use anyhow::{Context, Result};
@@ -14,7 +14,6 @@ use axum::{
     routing::{delete, get, post},
     Json, Router,
 };
-use eframe::egui;
 use reqwest::multipart::{Form, Part};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -115,20 +114,249 @@ fn main() -> Result<()> {
             eprintln!("Translator API stopped: {error}");
         }
     });
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_inner_size([1180.0, 780.0])
-            .with_min_inner_size([900.0, 620.0]),
-        ..Default::default()
-    };
-    eframe::run_native(
-        "Doclingo Translator",
-        options,
-        Box::new(|cc| Ok(Box::new(TranslatorApp::new(cc, state, runtime)))),
-    )
-    .map_err(|e| anyhow::anyhow!("native application stopped: {e}"))
+    run_slint(state, runtime)
 }
 
+slint::slint! {
+    import { Button, CheckBox, ComboBox, LineEdit } from "std-widgets.slint";
+
+    export component AppWindow inherits Window {
+        title: "Doclingo Translator";
+        width: 1180px;
+        height: 780px;
+        background: #12151b;
+        default-font-family: "Microsoft YaHei";
+
+        in-out property <string> notice: "正在加载 Doclingo 信息…";
+        in-out property <string> output-dir: "";
+        in-out property <string> target-language: "";
+        in-out property <string> model: "";
+        in-out property <[string]> languages;
+        in-out property <[string]> models;
+        in-out property <[string]> queue;
+        in-out property <string> summary: "0 个任务  ·  已完成 0 个";
+        in-out property <bool> ocr-enabled: false;
+        in-out property <bool> translate-filename: true;
+        callback add-files();
+        callback choose-output();
+        callback start-translation();
+        callback refresh-metadata();
+
+        VerticalLayout {
+            spacing: 0px;
+            Rectangle {
+                height: 64px;
+                background: #0d0f14;
+                border-color: #2c313b;
+                border-width: 1px;
+                HorizontalLayout {
+                    padding-left: 26px; padding-right: 26px; spacing: 18px;
+                    Text { text: "文档翻译"; color: #ffb31c; font-size: 24px; font-weight: 700; vertical-alignment: center; }
+                    Rectangle { width: 1px; height: 24px; background: #3a404b; }
+                    Text { text: "Doclingo · 本地翻译队列"; color: #9099a8; font-size: 14px; vertical-alignment: center; }
+                    Rectangle { horizontal-stretch: 1; }
+                    Text { text: "●  就绪"; color: #22d37b; font-size: 14px; vertical-alignment: center; }
+                }
+            }
+            HorizontalLayout {
+                spacing: 0px;
+                Rectangle {
+                    width: 300px; background: #15191f; border-color: #303641; border-width: 1px;
+                    VerticalLayout {
+                        padding: 18px; spacing: 10px;
+                        Text { text: "工作区"; color: #8993a1; font-size: 12px; }
+                        Rectangle { height: 42px; border-radius: 9px; background: #43361f; Text { text: "翻译队列"; color: #ffb31c; font-size: 16px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; } }
+                        Text { text: "翻译记录"; color: #b8c0cc; font-size: 15px; }
+                        Text { text: "术语库"; color: #b8c0cc; font-size: 15px; }
+                        Text { text: "设置"; color: #b8c0cc; font-size: 15px; }
+                        Rectangle { height: 1px; background: #303641; }
+                        Text { text: "翻译设置"; color: white; font-size: 16px; font-weight: 700; }
+                        Text { text: "输出语言"; color: #98a2b2; font-size: 13px; }
+                        ComboBox { model: root.languages; current-value <=> root.target-language; }
+                        Text { text: "翻译引擎"; color: #98a2b2; font-size: 13px; }
+                        ComboBox { model: root.models; current-value <=> root.model; }
+                        CheckBox { text: "启用 OCR"; checked <=> root.ocr-enabled; }
+                        CheckBox { text: "自动翻译文件名"; checked <=> root.translate-filename; }
+                        Text { text: "输出目录"; color: #98a2b2; font-size: 13px; }
+                        HorizontalLayout { spacing: 8px; LineEdit { text <=> root.output-dir; horizontal-stretch: 1; } Button { text: "选择"; clicked => { root.choose-output(); } } }
+                        Rectangle { vertical-stretch: 1; }
+                        Button { text: "刷新账户 / 模型信息"; clicked => { root.refresh-metadata(); } }
+                    }
+                }
+                Rectangle {
+                    background: #1a1e25;
+                    VerticalLayout {
+                        padding: 22px; spacing: 16px;
+                        HorizontalLayout {
+                            spacing: 10px;
+                            Button { text: "+  添加文件"; clicked => { root.add-files(); } }
+                            Button { text: "清空选择"; }
+                            Text { text: root.notice; color: #a3adba; font-size: 13px; vertical-alignment: center; horizontal-stretch: 1; }
+                        }
+                        Rectangle {
+                            height: 170px; border-radius: 14px; background: #202530; border-width: 1px; border-color: #414957;
+                            VerticalLayout { padding: 28px; spacing: 8px;
+                                Text { text: "拖入文档"; color: white; font-size: 24px; font-weight: 700; horizontal-alignment: center; }
+                                Text { text: "支持 Doclingo 可翻译的全部文档格式"; color: #aeb7c5; font-size: 14px; horizontal-alignment: center; }
+                                Text { text: "也可点击“添加文件”进行多选"; color: #6fbde4; font-size: 14px; horizontal-alignment: center; }
+                            }
+                        }
+                        Rectangle {
+                            background: #202530; border-radius: 14px; border-width: 1px; border-color: #414957; vertical-stretch: 1;
+                            VerticalLayout { padding: 16px; spacing: 10px;
+                                Text { text: "翻译队列"; color: white; font-size: 20px; font-weight: 700; }
+                                Rectangle { height: 1px; background: #414957; }
+                                HorizontalLayout { Text { text: "文件名"; color: #aeb7c5; horizontal-stretch: 3; } Text { text: "输出语言"; color: #aeb7c5; horizontal-stretch: 1; } Text { text: "状态"; color: #aeb7c5; horizontal-stretch: 1; } Text { text: "进度"; color: #aeb7c5; horizontal-stretch: 1; } }
+                                for row in root.queue: Text { text: row; color: #e5e9ef; font-size: 14px; }
+                                Rectangle { vertical-stretch: 1; }
+                            }
+                        }
+                        Rectangle { height: 70px; background: #202530; border-radius: 14px; border-width: 1px; border-color: #414957;
+                            HorizontalLayout { padding: 14px; Text { text: root.summary; color: #b6c0cd; font-size: 14px; vertical-alignment: center; horizontal-stretch: 1; } Button { text: "开始翻译"; clicked => { root.start-translation(); } } }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn run_slint(state: AppState, runtime: Arc<tokio::runtime::Runtime>) -> Result<()> {
+    use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
+    use std::{rc::Rc, sync::Mutex as StdMutex};
+    let ui = AppWindow::new().map_err(|e| anyhow::anyhow!("cannot create native window: {e}"))?;
+    let files = Arc::new(StdMutex::new(Vec::<PathBuf>::new()));
+    let refresh = |ui: &AppWindow, state: &AppState, runtime: &Arc<tokio::runtime::Runtime>| {
+        let jobs = runtime
+            .block_on(async {
+                let db = state.db.lock().await;
+                jobs_from(&db, "SELECT * FROM jobs ORDER BY created_at DESC", [])
+            })
+            .unwrap_or_default();
+        let rows = jobs
+            .iter()
+            .map(|j| {
+                SharedString::from(format!(
+                    "{}     {}     {}     {}",
+                    j.original_name,
+                    j.target_language,
+                    status_label(&j.status),
+                    j.progress
+                ))
+            })
+            .collect::<Vec<_>>();
+        ui.set_queue(ModelRc::new(Rc::new(VecModel::from(rows))));
+        ui.set_summary(
+            format!(
+                "共 {} 个任务  ·  已完成 {} 个",
+                jobs.len(),
+                jobs.iter().filter(|j| j.status == "completed").count()
+            )
+            .into(),
+        );
+    };
+    if let Ok(meta) = runtime.block_on(fetch_metadata(&state)) {
+        ui.set_languages(ModelRc::new(Rc::new(VecModel::from(
+            meta.languages
+                .into_iter()
+                .map(|x| SharedString::from(x.language_code))
+                .collect::<Vec<_>>(),
+        ))));
+        ui.set_models(ModelRc::new(Rc::new(VecModel::from(
+            meta.models
+                .into_iter()
+                .map(|x| SharedString::from(x.engine_name))
+                .collect::<Vec<_>>(),
+        ))));
+        ui.set_notice(format!("账户可用额度：{} 字", meta.account.total_words).into());
+    }
+    refresh(&ui, &state, &runtime);
+    let weak = ui.as_weak();
+    let files_for_add = files.clone();
+    ui.on_add_files(move || {
+        if let Some(paths) = rfd::FileDialog::new().pick_files() {
+            let count = paths.len();
+            files_for_add.lock().unwrap().extend(paths);
+            if let Some(ui) = weak.upgrade() {
+                ui.set_notice(format!("已选择 {} 个文件，设置后点击开始翻译。", count).into());
+            }
+        }
+    });
+    let weak = ui.as_weak();
+    ui.on_choose_output(move || {
+        if let Some(path) = rfd::FileDialog::new().pick_folder() {
+            if let Some(ui) = weak.upgrade() {
+                ui.set_output_dir(path.display().to_string().into());
+            }
+        }
+    });
+    let weak = ui.as_weak();
+    let metadata_state = state.clone();
+    let metadata_runtime = runtime.clone();
+    ui.on_refresh_metadata(move || {
+        if let Some(ui) = weak.upgrade() {
+            match metadata_runtime.block_on(fetch_metadata(&metadata_state)) {
+                Ok(meta) => {
+                    ui.set_languages(ModelRc::new(Rc::new(VecModel::from(
+                        meta.languages
+                            .into_iter()
+                            .map(|x| SharedString::from(x.language_code))
+                            .collect::<Vec<_>>(),
+                    ))));
+                    ui.set_models(ModelRc::new(Rc::new(VecModel::from(
+                        meta.models
+                            .into_iter()
+                            .map(|x| SharedString::from(x.engine_name))
+                            .collect::<Vec<_>>(),
+                    ))));
+                    ui.set_notice(format!("账户可用额度：{} 字", meta.account.total_words).into());
+                }
+                Err(e) => ui.set_notice(e.to_string().into()),
+            }
+        }
+    });
+    let weak = ui.as_weak();
+    let start_state = state.clone();
+    let start_runtime = runtime.clone();
+    let start_files = files.clone();
+    ui.on_start_translation(move || {
+        if let Some(ui) = weak.upgrade() {
+            let paths = std::mem::take(&mut *start_files.lock().unwrap());
+            let result = start_runtime.block_on(enqueue_paths(
+                &start_state,
+                paths,
+                &ui.get_output_dir(),
+                &ui.get_target_language(),
+                &ui.get_model(),
+                ui.get_ocr_enabled(),
+                ui.get_translate_filename(),
+            ));
+            ui.set_notice(match result {
+                Ok(jobs) => format!("已加入 {} 个翻译任务。", jobs.len()).into(),
+                Err(e) => e.to_string().into(),
+            });
+        }
+    });
+    let timer = slint::Timer::default();
+    let weak = ui.as_weak();
+    let timer_state = state.clone();
+    let timer_runtime = runtime.clone();
+    timer.start(
+        slint::TimerMode::Repeated,
+        Duration::from_secs(30),
+        move || {
+            if let Some(ui) = weak.upgrade() {
+                if let Ok(meta) = timer_runtime.block_on(fetch_metadata(&timer_state)) {
+                    ui.set_notice(format!("账户可用额度：{} 字", meta.account.total_words).into());
+                }
+            }
+        },
+    );
+    ui.run()
+        .map_err(|e| anyhow::anyhow!("native application stopped: {e}"))
+}
+
+#[cfg(any())]
 struct TranslatorApp {
     state: AppState,
     runtime: Arc<tokio::runtime::Runtime>,
@@ -146,6 +374,7 @@ struct TranslatorApp {
     last_metadata_refresh: Instant,
 }
 
+#[cfg(any())]
 impl TranslatorApp {
     fn new(
         cc: &eframe::CreationContext<'_>,
@@ -257,6 +486,7 @@ impl TranslatorApp {
     }
 }
 
+#[cfg(any())]
 impl eframe::App for TranslatorApp {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
         let mut visuals = egui::Visuals::dark();
@@ -594,12 +824,6 @@ impl eframe::App for TranslatorApp {
     }
 }
 
-fn language_label(metadata: Option<&Metadata>, code: &str) -> String {
-    metadata
-        .and_then(|m| m.languages.iter().find(|x| x.language_code == code))
-        .map(|x| x.language_name.clone())
-        .unwrap_or_else(|| "选择语言".into())
-}
 fn status_label(status: &str) -> &str {
     match status {
         "queued" => "排队中",
@@ -612,15 +836,6 @@ fn status_label(status: &str) -> &str {
         _ => status,
     }
 }
-fn progress_value(progress: &str) -> f32 {
-    progress
-        .trim_end_matches('%')
-        .parse::<f32>()
-        .unwrap_or(0.0)
-        .clamp(0.0, 100.0)
-        / 100.0
-}
-
 fn migrate(db: &Connection) -> Result<()> {
     db.execute_batch("CREATE TABLE IF NOT EXISTS jobs (
         id TEXT PRIMARY KEY, original_name TEXT NOT NULL, source_path TEXT NOT NULL, output_dir TEXT NOT NULL,

@@ -1,6 +1,6 @@
 # Translator harness
 
-This folder is the implementation contract for the native egui + Axum rewrite.
+This folder is the implementation contract for the native Slint + Axum rewrite.
 
 - [PRD](PRD.md): product scope and acceptance criteria
 - [SPEC](SPEC.md): architecture, state machine, storage, API
