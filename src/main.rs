@@ -100,7 +100,7 @@ async fn main() -> Result<()> {
         client: reqwest::Client::new(),
     };
     tokio::spawn(worker(state.clone()));
-    let app = Router::new()
+    let router = Router::new()
         .route("/api/jobs", get(list_jobs).post(create_jobs))
         .route("/api/jobs/{id}/retry", post(retry_job))
         .route("/api/jobs/{id}", delete(cancel_job))
@@ -112,11 +112,27 @@ async fn main() -> Result<()> {
         .with_state(state);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let address = listener.local_addr()?;
-    println!("Translator API listening on http://{address}");
-    let _ = std::process::Command::new("cmd")
-        .args(["/C", "start", "", &format!("http://{address}")])
-        .spawn();
-    axum::serve(listener, app).await.context("server stopped")
+    tokio::spawn(async move {
+        if let Err(error) = axum::serve(listener, router).await {
+            eprintln!("Translator API stopped: {error}");
+        }
+    });
+    let window_url = tauri::WebviewUrl::External(
+        format!("http://{address}")
+            .parse()
+            .context("invalid local application URL")?,
+    );
+    tauri::Builder::default()
+        .setup(move |app| {
+            tauri::WebviewWindowBuilder::new(app, "main", window_url.clone())
+                .title("Doclingo Translator")
+                .inner_size(1180.0, 780.0)
+                .min_inner_size(900.0, 620.0)
+                .build()?;
+            Ok(())
+        })
+        .run(tauri::generate_context!())
+        .context("native application stopped")
 }
 
 async fn serve_frontend(uri: axum::http::Uri) -> Response {

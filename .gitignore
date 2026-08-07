@@ -5,3 +5,5 @@
 /frontend/*.tsbuildinfo
 /.env
 /release/
+/gen/
+/native-build.log
