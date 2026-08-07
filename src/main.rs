@@ -110,23 +110,30 @@ async fn main() -> Result<()> {
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http())
         .with_state(state);
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
-    println!("Translator API listening on http://127.0.0.1:3000");
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+    let address = listener.local_addr()?;
+    println!("Translator API listening on http://{address}");
     let _ = std::process::Command::new("cmd")
-        .args(["/C", "start", "", "http://127.0.0.1:3000"])
+        .args(["/C", "start", "", &format!("http://{address}")])
         .spawn();
     axum::serve(listener, app).await.context("server stopped")
 }
 
 async fn serve_frontend(uri: axum::http::Uri) -> Response {
     let path = uri.path().trim_start_matches('/');
-    let asset = Frontend::get(if path.is_empty() { "index.html" } else { path })
-        .or_else(|| Frontend::get("index.html"));
+    let asset_path = if path.is_empty() || Frontend::get(path).is_none() {
+        "index.html"
+    } else {
+        path
+    };
+    let asset = Frontend::get(asset_path);
     match asset {
         Some(asset) => (
             [(
                 "content-type",
-                mime_guess::from_path(path).first_or_octet_stream().as_ref(),
+                mime_guess::from_path(asset_path)
+                    .first_or_octet_stream()
+                    .as_ref(),
             )],
             asset.data,
         )
