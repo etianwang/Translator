@@ -120,6 +120,33 @@ fn main() -> Result<()> {
 slint::slint! {
     import { Button, CheckBox } from "std-widgets.slint";
 
+    component DarkSelect inherits Rectangle {
+        in property <[string]> values;
+        in-out property <string> value;
+        height: 40px;
+        border-radius: 7px;
+        background: #252b35;
+        border-width: 1px;
+        border-color: #4a5565;
+        Text { text: root.value; color: white; font-size: 14px; vertical-alignment: center; x: 12px; width: parent.width - 42px; overflow: elide; }
+        Text { text: "v"; color: #ffb31c; font-size: 17px; horizontal-alignment: center; vertical-alignment: center; x: parent.width - 32px; width: 24px; }
+        TouchArea { clicked => { popup.show(); } }
+        popup := PopupWindow {
+            x: 0; y: root.height + 5px; width: root.width; height: min(240px, root.values.length * 38px);
+            close-policy: close-on-click-outside;
+            Rectangle { background: #252b35; border-radius: 8px; border-width: 1px; border-color: #4a5565;
+                Flickable { width: 100%; height: 100%; viewport-height: root.values.length * 38px;
+                    VerticalLayout { padding: 4px; spacing: 2px;
+                        for item in root.values: Rectangle { height: 34px; border-radius: 5px; background: touch.has-hover ? #3a4656 : #252b35;
+                            Text { text: item; color: white; font-size: 14px; vertical-alignment: center; x: 10px; width: parent.width - 20px; overflow: elide; }
+                            touch := TouchArea { clicked => { root.value = item; popup.close(); } }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     export component AppWindow inherits Window {
         title: "Doclingo Translator";
         width: 1180px;
@@ -143,8 +170,6 @@ slint::slint! {
         callback clear-files();
         callback choose-output();
         callback start-translation();
-        callback next-language();
-        callback next-model();
 
         VerticalLayout {
             spacing: 0px;
@@ -172,17 +197,9 @@ slint::slint! {
                         Rectangle { height: 1px; background: #303641; }
                         Text { text: "翻译设置"; color: white; font-size: 16px; font-weight: 700; }
                         Text { text: "输出语言"; color: #98a2b2; font-size: 13px; }
-                        Rectangle { height: 40px; border-radius: 7px; background: #252b35; border-width: 1px; border-color: #4a5565;
-                            Text { text: root.target-language; color: white; font-size: 14px; vertical-alignment: center; x: 12px; width: parent.width - 42px; overflow: elide; }
-                            Text { text: "v"; color: #ffb31c; font-size: 17px; horizontal-alignment: center; vertical-alignment: center; x: parent.width - 32px; width: 24px; }
-                            TouchArea { clicked => { root.next-language(); } }
-                        }
+                        DarkSelect { values: root.languages; value <=> root.target-language; }
                         Text { text: "翻译引擎"; color: #98a2b2; font-size: 13px; }
-                        Rectangle { height: 40px; border-radius: 7px; background: #252b35; border-width: 1px; border-color: #4a5565;
-                            Text { text: root.model; color: white; font-size: 14px; vertical-alignment: center; x: 12px; width: parent.width - 42px; overflow: elide; }
-                            Text { text: "v"; color: #ffb31c; font-size: 17px; horizontal-alignment: center; vertical-alignment: center; x: parent.width - 32px; width: 24px; }
-                            TouchArea { clicked => { root.next-model(); } }
-                        }
+                        DarkSelect { values: root.models; value <=> root.model; }
                         CheckBox { text: "启用 OCR"; checked <=> root.ocr-enabled; }
                         CheckBox { text: "自动翻译文件名"; checked <=> root.translate-filename; }
                         Text { text: "输出目录"; color: #98a2b2; font-size: 13px; }
@@ -239,7 +256,7 @@ slint::slint! {
 }
 
 fn run_slint(state: AppState, runtime: Arc<tokio::runtime::Runtime>) -> Result<()> {
-    use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
+    use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
     use std::{collections::HashMap, rc::Rc, sync::Mutex as StdMutex};
     let ui = AppWindow::new().map_err(|e| anyhow::anyhow!("cannot create native window: {e}"))?;
     let files = Arc::new(StdMutex::new(Vec::<PathBuf>::new()));
@@ -340,42 +357,6 @@ fn run_slint(state: AppState, runtime: Arc<tokio::runtime::Runtime>) -> Result<(
         if let Some(path) = rfd::FileDialog::new().pick_folder() {
             if let Some(ui) = weak.upgrade() {
                 ui.set_output_dir(path.display().to_string().into());
-            }
-        }
-    });
-    let weak = ui.as_weak();
-    ui.on_next_language(move || {
-        if let Some(ui) = weak.upgrade() {
-            let model = ui.get_languages();
-            let next = (0..model.row_count()).find_map(|index| {
-                (model
-                    .row_data(index)
-                    .map(|value| value.as_str() == ui.get_target_language().as_str())
-                    .unwrap_or(false))
-                .then_some((index + 1) % model.row_count())
-            });
-            if let Some(index) = next {
-                if let Some(value) = model.row_data(index) {
-                    ui.set_target_language(value);
-                }
-            }
-        }
-    });
-    let weak = ui.as_weak();
-    ui.on_next_model(move || {
-        if let Some(ui) = weak.upgrade() {
-            let model = ui.get_models();
-            let next = (0..model.row_count()).find_map(|index| {
-                (model
-                    .row_data(index)
-                    .map(|value| value.as_str() == ui.get_model().as_str())
-                    .unwrap_or(false))
-                .then_some((index + 1) % model.row_count())
-            });
-            if let Some(index) = next {
-                if let Some(value) = model.row_data(index) {
-                    ui.set_model(value);
-                }
             }
         }
     });
