@@ -151,6 +151,8 @@ slint::slint! {
         title: "Doclingo Translator";
         width: 1180px;
         height: 780px;
+        no-frame: true;
+        resize-border-width: 6px;
         background: #12151b;
         default-font-family: "Microsoft YaHei";
 
@@ -185,6 +187,19 @@ slint::slint! {
                     Text { text: "Doclingo · 本地翻译队列"; color: #9099a8; font-size: 14px; vertical-alignment: center; }
                     Rectangle { horizontal-stretch: 1; }
                     Text { text: "●  就绪"; color: #22d37b; font-size: 14px; vertical-alignment: center; }
+                    Rectangle { width: 1px; height: 22px; background: #303641; }
+                    Rectangle { width: 34px; height: 34px; border-radius: 6px; background: minimize.has-hover ? #2b313b : #0d0f14;
+                        Text { text: "—"; color: #c8d0db; font-size: 17px; horizontal-alignment: center; vertical-alignment: center; y: -3px; }
+                        minimize := TouchArea { clicked => { root.minimized = true; } }
+                    }
+                    Rectangle { width: 34px; height: 34px; border-radius: 6px; background: maximize.has-hover ? #2b313b : #0d0f14;
+                        Text { text: root.maximized ? "❐" : "□"; color: #c8d0db; font-size: 15px; horizontal-alignment: center; vertical-alignment: center; }
+                        maximize := TouchArea { clicked => { root.maximized = !root.maximized; } }
+                    }
+                    Rectangle { width: 34px; height: 34px; border-radius: 6px; background: close-button.has-hover ? #d74747 : #0d0f14;
+                        Text { text: "×"; color: white; font-size: 22px; horizontal-alignment: center; vertical-alignment: center; y: -1px; }
+                        close-button := TouchArea { clicked => { root.close(); } }
+                    }
                 }
             }
             HorizontalLayout {
