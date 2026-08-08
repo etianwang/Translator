@@ -118,7 +118,7 @@ fn main() -> Result<()> {
 }
 
 slint::slint! {
-    import { Button, CheckBox, LineEdit } from "std-widgets.slint";
+    import { Button, CheckBox } from "std-widgets.slint";
 
     export component AppWindow inherits Window {
         title: "Doclingo Translator";
@@ -135,10 +135,12 @@ slint::slint! {
         in-out property <[string]> models;
         in-out property <[string]> queue;
         in-out property <string> summary: "0 个任务  ·  已完成 0 个";
+        in-out property <string> selection-info: "尚未选择文件";
         in-out property <string> account-info: "正在加载账户信息…";
         in-out property <bool> ocr-enabled: false;
         in-out property <bool> translate-filename: true;
         callback add-files();
+        callback clear-files();
         callback choose-output();
         callback start-translation();
         callback next-language();
@@ -172,19 +174,22 @@ slint::slint! {
                         Text { text: "输出语言"; color: #98a2b2; font-size: 13px; }
                         Rectangle { height: 40px; border-radius: 7px; background: #252b35; border-width: 1px; border-color: #4a5565;
                             Text { text: root.target-language; color: white; font-size: 14px; vertical-alignment: center; x: 12px; width: parent.width - 42px; overflow: elide; }
-                            Text { text: "⌄"; color: #ffb31c; font-size: 19px; horizontal-alignment: center; vertical-alignment: center; x: parent.width - 32px; width: 24px; }
+                            Text { text: "v"; color: #ffb31c; font-size: 17px; horizontal-alignment: center; vertical-alignment: center; x: parent.width - 32px; width: 24px; }
                             TouchArea { clicked => { root.next-language(); } }
                         }
                         Text { text: "翻译引擎"; color: #98a2b2; font-size: 13px; }
                         Rectangle { height: 40px; border-radius: 7px; background: #252b35; border-width: 1px; border-color: #4a5565;
                             Text { text: root.model; color: white; font-size: 14px; vertical-alignment: center; x: 12px; width: parent.width - 42px; overflow: elide; }
-                            Text { text: "⌄"; color: #ffb31c; font-size: 19px; horizontal-alignment: center; vertical-alignment: center; x: parent.width - 32px; width: 24px; }
+                            Text { text: "v"; color: #ffb31c; font-size: 17px; horizontal-alignment: center; vertical-alignment: center; x: parent.width - 32px; width: 24px; }
                             TouchArea { clicked => { root.next-model(); } }
                         }
                         CheckBox { text: "启用 OCR"; checked <=> root.ocr-enabled; }
                         CheckBox { text: "自动翻译文件名"; checked <=> root.translate-filename; }
                         Text { text: "输出目录"; color: #98a2b2; font-size: 13px; }
-                        HorizontalLayout { spacing: 8px; LineEdit { text <=> root.output-dir; horizontal-stretch: 1; } Button { text: "选择"; clicked => { root.choose-output(); } } }
+                        HorizontalLayout { spacing: 8px;
+                            Rectangle { height: 40px; horizontal-stretch: 1; border-radius: 7px; background: #252b35; border-width: 1px; border-color: #4a5565; Text { text: root.output-dir == "" ? "请选择输出目录" : root.output-dir; color: #c5cdd8; font-size: 13px; vertical-alignment: center; x: 10px; width: parent.width - 20px; overflow: elide; } }
+                            Rectangle { width: 52px; height: 40px; border-radius: 7px; background: #3b4654; Text { text: "选择"; color: white; font-size: 13px; horizontal-alignment: center; vertical-alignment: center; } TouchArea { clicked => { root.choose-output(); } } }
+                        }
                         Rectangle { vertical-stretch: 1; }
                         Rectangle { height: 118px; border-radius: 10px; background: #202530; border-width: 1px; border-color: #414957;
                             VerticalLayout { padding: 12px; spacing: 6px;
@@ -202,7 +207,7 @@ slint::slint! {
                         HorizontalLayout {
                             spacing: 10px;
                             Button { text: "+  添加文件"; clicked => { root.add-files(); } }
-                            Button { text: "清空选择"; }
+                            Button { text: "清空选择"; clicked => { root.clear-files(); } }
                             Text { text: root.notice; color: #a3adba; font-size: 13px; vertical-alignment: center; horizontal-stretch: 1; }
                         }
                         Rectangle {
@@ -210,7 +215,7 @@ slint::slint! {
                             VerticalLayout { padding: 28px; spacing: 8px;
                                 Text { text: "拖入文档"; color: white; font-size: 24px; font-weight: 700; horizontal-alignment: center; }
                                 Text { text: "支持 Doclingo 可翻译的全部文档格式"; color: #aeb7c5; font-size: 14px; horizontal-alignment: center; }
-                                Text { text: "也可点击“添加文件”进行多选"; color: #6fbde4; font-size: 14px; horizontal-alignment: center; }
+                                Text { text: root.selection-info; color: #6fbde4; font-size: 14px; horizontal-alignment: center; }
                             }
                         }
                         Rectangle {
@@ -287,25 +292,47 @@ fn run_slint(state: AppState, runtime: Arc<tokio::runtime::Runtime>) -> Result<(
             }
         }
         ui.set_languages(ModelRc::new(Rc::new(VecModel::from(languages))));
-        ui.set_models(ModelRc::new(Rc::new(VecModel::from(
-            meta.models
-                .into_iter()
-                .map(|x| SharedString::from(x.engine_name))
-                .collect::<Vec<_>>(),
-        ))));
+        let models = meta
+            .models
+            .into_iter()
+            .map(|x| SharedString::from(x.engine_name))
+            .collect::<Vec<_>>();
+        if ui.get_model().is_empty() {
+            if let Some(model) = models.first() {
+                ui.set_model(model.clone());
+            }
+        }
+        ui.set_models(ModelRc::new(Rc::new(VecModel::from(models))));
         ui.set_account_info(account_summary(&meta.account).into());
         ui.set_notice(format!("账户可用额度：{} 字", meta.account.total_words).into());
+    } else {
+        ui.set_account_info(
+            "无法加载账户信息。请确认 EXE 同目录 .env 中已配置 DOCLINGO_API_KEY。".into(),
+        );
+        ui.set_notice("未配置或无法读取 DOCLINGO_API_KEY。".into());
     }
     refresh(&ui, &state, &runtime);
     let weak = ui.as_weak();
     let files_for_add = files.clone();
     ui.on_add_files(move || {
         if let Some(paths) = rfd::FileDialog::new().pick_files() {
-            let count = paths.len();
             files_for_add.lock().unwrap().extend(paths);
+            let count = files_for_add.lock().unwrap().len();
             if let Some(ui) = weak.upgrade() {
                 ui.set_notice(format!("已选择 {} 个文件，设置后点击开始翻译。", count).into());
+                ui.set_selection_info(
+                    format!("已选择 {} 个文件 · 点击上方“添加文件”可继续多选", count).into(),
+                );
             }
+        }
+    });
+    let weak = ui.as_weak();
+    let files_for_clear = files.clone();
+    ui.on_clear_files(move || {
+        files_for_clear.lock().unwrap().clear();
+        if let Some(ui) = weak.upgrade() {
+            ui.set_selection_info("尚未选择文件 · 点击上方“添加文件”进行多选".into());
+            ui.set_notice("已清空待提交文件。".into());
         }
     });
     let weak = ui.as_weak();
@@ -359,7 +386,7 @@ fn run_slint(state: AppState, runtime: Arc<tokio::runtime::Runtime>) -> Result<(
     let start_languages = language_codes.clone();
     ui.on_start_translation(move || {
         if let Some(ui) = weak.upgrade() {
-            let paths = std::mem::take(&mut *start_files.lock().unwrap());
+            let paths = start_files.lock().unwrap().clone();
             let result = start_runtime.block_on(enqueue_paths(
                 &start_state,
                 paths,
@@ -375,11 +402,53 @@ fn run_slint(state: AppState, runtime: Arc<tokio::runtime::Runtime>) -> Result<(
                 ui.get_translate_filename(),
             ));
             ui.set_notice(match result {
-                Ok(jobs) => format!("已加入 {} 个翻译任务。", jobs.len()).into(),
+                Ok(jobs) => {
+                    start_files.lock().unwrap().clear();
+                    ui.set_selection_info("任务已加入队列。可继续添加下一批文件。".into());
+                    format!("已加入 {} 个翻译任务。", jobs.len()).into()
+                }
                 Err(e) => e.to_string().into(),
             });
         }
     });
+    let jobs_timer = slint::Timer::default();
+    let weak = ui.as_weak();
+    let jobs_state = state.clone();
+    let jobs_runtime = runtime.clone();
+    jobs_timer.start(
+        slint::TimerMode::Repeated,
+        Duration::from_secs(1),
+        move || {
+            if let Some(ui) = weak.upgrade() {
+                if let Ok(jobs) = jobs_runtime.block_on(async {
+                    let db = jobs_state.db.lock().await;
+                    jobs_from(&db, "SELECT * FROM jobs ORDER BY created_at DESC", [])
+                }) {
+                    let rows = jobs
+                        .iter()
+                        .map(|j| {
+                            SharedString::from(format!(
+                                "{}     {}     {}     {}",
+                                j.original_name,
+                                j.target_language,
+                                status_label(&j.status),
+                                j.progress
+                            ))
+                        })
+                        .collect::<Vec<_>>();
+                    ui.set_queue(ModelRc::new(Rc::new(VecModel::from(rows))));
+                    ui.set_summary(
+                        format!(
+                            "共 {} 个任务  ·  已完成 {} 个",
+                            jobs.len(),
+                            jobs.iter().filter(|j| j.status == "completed").count()
+                        )
+                        .into(),
+                    );
+                }
+            }
+        },
+    );
     let timer = slint::Timer::default();
     let weak = ui.as_weak();
     let timer_state = state.clone();
