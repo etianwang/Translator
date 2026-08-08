@@ -153,7 +153,7 @@ slint::slint! {
         height: 780px;
         no-frame: true;
         resize-border-width: 6px;
-        background: #12151b;
+        background: #00000000;
         default-font-family: "Microsoft YaHei";
 
         in-out property <string> notice: "正在加载 Doclingo 信息…";
@@ -173,8 +173,12 @@ slint::slint! {
         callback choose-output();
         callback start-translation();
 
-        VerticalLayout {
-            spacing: 0px;
+        Rectangle {
+            background: #12151b;
+            border-radius: 16px;
+            clip: true;
+            VerticalLayout {
+                spacing: 0px;
             Rectangle {
                 height: 64px;
                 background: #0d0f14;
@@ -265,6 +269,7 @@ slint::slint! {
                         }
                     }
                 }
+            }
             }
         }
     }
